@@ -8,6 +8,9 @@ import { DAY_START_HOUR, dateKey, load, logicalDate, save } from "@/lib/storage"
 import TaskCard from "./TaskCard";
 import BreathTimer from "./BreathTimer";
 import NightJournal from "./NightJournal";
+import Ambience from "./Ambience";
+import PosterHeader from "./PosterHeader";
+import { monthDay, monthDayWeekday } from "@/lib/zhDate";
 
 type Mode = "morning" | "night";
 type StoredCard = { card: Card; fromLastNight: boolean };
@@ -100,67 +103,61 @@ function Flow() {
   }, [today, mode, attempt]);
 
   const night = mode === "night";
+  const day = logicalDate();
+  const couplet = coupletOfTheDay(night);
+  const dateLabel = monthDay(day);
+  const link = `font-sans text-xs tracking-[0.25em] border-b pb-0.5 transition ${
+    night ? "border-moon/30 text-moon/80 hover:text-moon" : "border-ink/25 text-ink-soft hover:text-moss hover:border-moss"
+  }`;
 
   return (
-    <main
-      className={`min-h-screen px-4 pb-16 pt-10 transition-colors duration-700 ${
-        night
-          ? "bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 text-indigo-50"
-          : "bg-gradient-to-b from-amber-50 via-orange-50 to-sky-50 text-stone-800"
-      }`}
-    >
-      <header className="mx-auto mb-8 flex max-w-sm items-start justify-between gap-3">
-        <div>
-          <p className={`text-sm ${night ? "text-indigo-300" : "text-orange-500"}`}>
-            {logicalDate().toLocaleDateString("zh-TW", { month: "long", day: "numeric", weekday: "long" })}
-          </p>
-          <h1 className="mt-1 text-2xl font-bold">
-            {night ? "🌙 晚安，回顧今天吧" : "☀️ 早安，啟動今天的專注"}
-          </h1>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <button
-            type="button"
-            onClick={() => setMode(night ? "morning" : "night")}
-            className={`rounded-full px-3 py-1 text-xs ring-1 transition ${
-              night ? "ring-white/20 hover:bg-white/10" : "ring-stone-300 hover:bg-white"
-            }`}
-            title="手動切換早晨 / 夜間"
-          >
-            {night ? "☀️ 早晨" : "🌙 夜間"}
+    <main className={`relative min-h-screen px-6 pb-20 pt-10 ${night ? "text-moon" : "text-ink"}`}>
+      <Ambience night={night} />
+
+      <nav className="mx-auto flex max-w-sm animate-fade items-center justify-between">
+        <p className={`text-sm tracking-[0.2em] ${night ? "text-moon/60" : "text-ink-soft"}`}>{monthDayWeekday(day)}</p>
+        <div className="flex gap-5">
+          <button type="button" onClick={() => setMode(night ? "morning" : "night")} className={link} title="手動切換早晨 / 夜間">
+            {night ? "晨" : "夜"}
           </button>
-          <Link
-            href="/collection"
-            className={`rounded-full px-3 py-1 text-xs ring-1 transition ${
-              night ? "ring-white/20 hover:bg-white/10" : "ring-stone-300 hover:bg-white"
-            }`}
-          >
-            📚 收藏冊
+          <Link href="/collection" className={link}>
+            收藏
           </Link>
         </div>
-      </header>
+      </nav>
+
+      <PosterHeader
+        glyph={night ? "夜" : "晨"}
+        label={night ? "晚安" : "早安"}
+        couplet={couplet}
+        seal={night ? "安眠" : "清晨"}
+        night={night}
+        className="mb-12 mt-8"
+      />
 
       {night ? (
         <NightJournal todayCard={today?.card ?? null} />
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-14">
           <TaskCard
             card={today?.card ?? null}
+            seed={dateKey()}
+            dateLabel={dateLabel}
             failed={failed}
-            badge={today?.fromLastNight ? "🎁 昨晚為你準備的專屬卡片" : undefined}
+            badge={today?.fromLastNight ? "昨夜留箋" : undefined}
           />
           {failed && (
-            <div className="text-center">
-              <p className="text-sm text-stone-500">連線好像不太順，卡片沒抽到。</p>
+            <div className="-mt-8 text-center">
+              <p className="text-sm font-light text-ink-soft">連線有些不順，卡片還沒來。</p>
               <button
                 type="button"
                 onClick={() => {
                   setFailed(false);
                   setAttempt((n) => n + 1);
                 }}
-                className="mt-2 rounded-full bg-stone-800 px-5 py-2 text-sm font-medium text-white hover:bg-stone-700"
+                className="mt-3 border-b border-ink/40 pb-1 font-sans text-sm tracking-[0.3em] hover:border-moss hover:text-moss"
               >
-                重新抽卡
+                再試一次
               </button>
             </div>
           )}
@@ -169,4 +166,31 @@ function Flow() {
       )}
     </main>
   );
+}
+
+// Four-character couplets, written vertically in the header.
+const MORNING_COUPLETS: [string, string][] = [
+  ["晨光微涼", "慢慢醒來"],
+  ["風過竹林", "心也輕了"],
+  ["葉上有露", "日子有光"],
+  ["一壺清茶", "半日閒情"],
+  ["山色如黛", "步履從容"],
+  ["花開不急", "你也不必"],
+  ["雲在天上", "心在當下"],
+];
+const NIGHT_COUPLETS: [string, string][] = [
+  ["月照湖心", "萬事皆安"],
+  ["螢火點點", "好事件件"],
+  ["夜涼如水", "心靜如山"],
+  ["燈下記事", "收好今天"],
+  ["風停樹靜", "該歇息了"],
+  ["星落人間", "一夜好眠"],
+  ["日落息心", "靜心安枕"],
+];
+
+/** A couplet that changes daily (same couplet all day). */
+function coupletOfTheDay(night: boolean) {
+  const list = night ? NIGHT_COUPLETS : MORNING_COUPLETS;
+  const day = Math.floor(logicalDate().getTime() / 86_400_000);
+  return list[day % list.length];
 }
