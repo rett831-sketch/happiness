@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   title: "happiness",
   description,
   // Opened from the iPhone home screen: full screen, with this name under the icon.
-  appleWebApp: { capable: true, title: "幸福", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "幸福練習課", statusBarStyle: "default" },
   openGraph: {
     title: "happiness 幸福小練習",
     description,

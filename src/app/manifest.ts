@@ -4,8 +4,8 @@ import type { MetadataRoute } from "next";
 // Icon URLs come from app/icon.tsx (one per id in generateImageMetadata).
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "happiness 幸福小練習",
-    short_name: "幸福",
+    name: "幸福練習課",
+    short_name: "幸福練習課",
     description: "每天兩次的幸福小練習：早晨翻開一張任務卡，夜晚寫下三件好事。",
     lang: "zh-Hant",
     start_url: "/",

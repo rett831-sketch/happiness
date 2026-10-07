@@ -12,6 +12,6 @@ export function generateImageMetadata() {
 
 export default async function Icon({ id }: { id: Promise<string> }) {
   const iconId = await id;
-  if (iconId === "maskable") return renderAppIcon(512, 0.5); // extra margin for circular crops
+  if (iconId === "maskable") return renderAppIcon(512, 0.6); // extra margin for circular crops
   return renderAppIcon(Number(iconId));
 }
