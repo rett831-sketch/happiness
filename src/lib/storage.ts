@@ -46,6 +46,14 @@ export function save(key: string, value: unknown) {
   }
 }
 
+export function remove(key: string) {
+  try {
+    localStorage.removeItem(PREFIX + key);
+  } catch {
+    // ignore: storage unavailable
+  }
+}
+
 /** All stored values whose key starts with `group:`, as [date, value] pairs, newest first. */
 export function loadAll<T>(group: string): [string, T][] {
   const out: [string, T][] = [];

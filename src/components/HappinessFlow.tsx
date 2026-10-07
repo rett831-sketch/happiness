@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { TaskCard as Card } from "@/lib/ai";
+import type { TaskCard as Card, KeyProblem } from "@/lib/ai";
+import { aiHeaders, getApiKey } from "@/lib/apiKey";
 import Link from "next/link";
 import { useIsClient } from "@/lib/useIsClient";
 import { DAY_START_HOUR, dateKey, load, logicalDate, save } from "@/lib/storage";
@@ -10,6 +11,8 @@ import BreathTimer from "./BreathTimer";
 import NightJournal from "./NightJournal";
 import Ambience from "./Ambience";
 import PosterHeader from "./PosterHeader";
+import KeySettings from "./KeySettings";
+import AiNotice from "./AiNotice";
 import { monthDay, monthDayWeekday } from "@/lib/zhDate";
 
 type Mode = "morning" | "night";
@@ -45,6 +48,9 @@ function Flow() {
   const [today, setToday] = useState<StoredCard | null>(loadTodayCard);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Where today's freshly drawn card came from (null for saved or gifted cards).
+  const [cardInfo, setCardInfo] = useState<{ source: "ai" | "local"; keyProblem?: KeyProblem } | null>(null);
+  const [keyOpen, setKeyOpen] = useState(false);
 
   // Draw a new card only in the morning, so opening the app at night never triggers it.
   useEffect(() => {
@@ -55,15 +61,23 @@ function Flow() {
         // Weather is looked up on the server from the approximate IP location: no permission prompt.
         const res = await fetch("/api/card", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ weekdayIndex: logicalDate().getDay() }),
+          headers: { "Content-Type": "application/json", ...aiHeaders() },
+          body: JSON.stringify({ weekdayIndex: logicalDate().getDay(), date: dateKey() }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { card, source } = (await res.json()) as { card: Card; source: "ai" | "local" };
+        const { card, source, keyProblem } = (await res.json()) as {
+          card: Card;
+          source: "ai" | "local";
+          keyProblem?: KeyProblem;
+        };
         const stored = { card, fromLastNight: false };
-        // Keep only AI cards, so a temporary AI failure doesn't lock in the built-in card all day.
-        if (source === "ai") save(`card:${dateKey()}`, stored);
-        if (!cancelled) setToday(stored);
+        // Keep AI cards, and built-in cards for visitors without a key (so the card doesn't change
+        // during the day). With a key, a temporary AI failure shouldn't lock in a built-in card.
+        if (source === "ai" || !getApiKey()) save(`card:${dateKey()}`, stored);
+        if (!cancelled) {
+          setToday(stored);
+          setCardInfo({ source, keyProblem });
+        }
       } catch {
         if (!cancelled) setFailed(true);
       }
@@ -72,6 +86,15 @@ function Flow() {
       cancelled = true;
     };
   }, [today, mode, attempt]);
+
+  // After adding or changing a key, redraw today's built-in card with AI right away.
+  function onKeyChange() {
+    if (mode === "morning" && today && !load(`card:${dateKey()}`)) {
+      setToday(null);
+      setCardInfo(null);
+      setFailed(false);
+    }
+  }
 
   const night = mode === "night";
   const day = logicalDate();
@@ -91,6 +114,9 @@ function Flow() {
           <button type="button" onClick={() => setMode(night ? "morning" : "night")} className={link} title="手動切換早晨 / 夜間">
             {night ? "晨" : "夜"}
           </button>
+          <button type="button" onClick={() => setKeyOpen(true)} className={link}>
+            金鑰
+          </button>
           <Link href="/collection" className={link}>
             收藏
           </Link>
@@ -107,16 +133,22 @@ function Flow() {
       />
 
       {night ? (
-        <NightJournal todayCard={today?.card ?? null} />
+        <NightJournal todayCard={today?.card ?? null} onOpenKeySettings={() => setKeyOpen(true)} />
       ) : (
         <div className="space-y-14">
           <TaskCard
+            key={today?.card.title ?? "pending"}
             card={today?.card ?? null}
             seed={dateKey()}
             dateLabel={dateLabel}
             failed={failed}
             badge={today?.fromLastNight ? "昨夜留箋" : undefined}
           />
+          {cardInfo?.source === "local" && (
+            <div className="-mt-8">
+              <AiNotice keyProblem={cardInfo.keyProblem} onOpenSettings={() => setKeyOpen(true)} />
+            </div>
+          )}
           {failed && (
             <div className="-mt-8 text-center">
               <p className="text-sm font-light text-ink-soft">連線有些不順，卡片還沒來。</p>
@@ -135,6 +167,8 @@ function Flow() {
           <BreathTimer />
         </div>
       )}
+
+      {keyOpen && <KeySettings onClose={() => setKeyOpen(false)} onChange={onKeyChange} />}
     </main>
   );
 }

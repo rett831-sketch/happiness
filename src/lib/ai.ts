@@ -1,6 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
+import { detectProvider, KEY_HEADER, type Provider } from "./apiKey";
 import { partialString } from "./partialJson";
 
 export const TaskCardSchema = z.object({
@@ -20,18 +23,69 @@ const SYSTEM = `你是「happiness」的幸福教練，語氣溫暖、簡潔、�
 任務要小、具體、能在日常中順手完成（通勤、走路、吃飯、工作空檔），不需花錢、不需特殊道具。
 文字要安靜、有質感，像一張好看的明信片；不要使用 emoji 或顏文字。`;
 
-const client = new Anthropic();
+const CLAUDE_MODEL = "claude-opus-5-5";
+const OPENAI_MODEL = "gpt-5.5";
 
-/** Without a key the app uses the built-in cards and replies (see fallback.ts). */
-export const aiEnabled = Boolean(process.env.ANTHROPIC_API_KEY);
+// ---------------------------------------------------------------------------
+// Keys: bring your own key (BYOK)
+// ---------------------------------------------------------------------------
 
-async function ask<T extends z.ZodType>(schema: T, prompt: string): Promise<z.infer<T>> {
-  const response = await client.beta.messages.parse({
-    model: "claude-opus-5-5",
+export type AiAuth = { provider: Provider; apiKey: string };
+
+/**
+ * The key to use for this request: the visitor's own key from the request header,
+ * otherwise a key configured on the server (if the site owner set one). Null means
+ * no AI: the routes answer with the built-in cards and replies.
+ */
+export function resolveAuth(request: Request): AiAuth | null {
+  const userKey = request.headers.get(KEY_HEADER)?.trim();
+  if (userKey) {
+    const provider = detectProvider(userKey);
+    return provider ? { provider, apiKey: userKey } : null;
+  }
+  if (process.env.ANTHROPIC_API_KEY) return { provider: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY };
+  if (process.env.OPENAI_API_KEY) return { provider: "openai", apiKey: process.env.OPENAI_API_KEY };
+  return null;
+}
+
+/** Why a visitor's key didn't work, so the page can tell them instead of silently using built-in content. */
+export type KeyProblem = "invalid" | "quota";
+
+export function keyProblemOf(error: unknown): KeyProblem | undefined {
+  if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) return "invalid";
+  if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError) return "invalid";
+  // OpenAI reports an empty balance (insufficient_quota) as 429 too.
+  if (error instanceof Anthropic.RateLimitError || error instanceof OpenAI.RateLimitError) return "quota";
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Morning card
+// ---------------------------------------------------------------------------
+
+export async function generateTaskCard(ctx: { weekday: string; weather?: string }, auth: AiAuth): Promise<TaskCard> {
+  const prompt = `今天是${ctx.weekday}${ctx.weather ? `，天氣：${ctx.weather}` : ""}。
+請依照今天的星期與天氣，設計一張「今日幸福任務卡」。
+範例：「今天走路時，刻意觀察 3 個綠色的東西」。`;
+
+  if (auth.provider === "openai") {
+    const response = await new OpenAI({ apiKey: auth.apiKey }).responses.parse({
+      model: OPENAI_MODEL,
+      instructions: SYSTEM,
+      input: prompt,
+      reasoning: { effort: "low" },
+      text: { format: zodTextFormat(TaskCardSchema, "task_card") },
+    });
+    if (!response.output_parsed) throw new Error(`No usable output (status: ${response.status})`);
+    return response.output_parsed;
+  }
+
+  const response = await new Anthropic({ apiKey: auth.apiKey }).beta.messages.parse({
+    model: CLAUDE_MODEL,
     max_tokens: 4000,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    output_config: { effort: "low", format: betaZodOutputFormat(schema) },
+    output_config: { effort: "low", format: betaZodOutputFormat(TaskCardSchema) },
     system: SYSTEM,
     messages: [{ role: "user", content: prompt }],
   });
@@ -41,14 +95,9 @@ async function ask<T extends z.ZodType>(schema: T, prompt: string): Promise<z.in
   return response.parsed_output;
 }
 
-export function generateTaskCard(ctx: { weekday: string; weather?: string }) {
-  return ask(
-    TaskCardSchema,
-    `今天是${ctx.weekday}${ctx.weather ? `，天氣：${ctx.weather}` : ""}。
-請依照今天的星期與天氣，設計一張「今日幸福任務卡」。
-範例：「今天走路時，刻意觀察 3 個綠色的東西」。`,
-  );
-}
+// ---------------------------------------------------------------------------
+// Evening echo (streamed)
+// ---------------------------------------------------------------------------
 
 export type EchoEvent = { type: "delta"; text: string } | { type: "reset" };
 
@@ -59,9 +108,43 @@ export type EchoEvent = { type: "delta"; text: string } | { type: "reset" };
 export async function streamEcho(
   ctx: { task?: string; reflection?: string; goodThings: string[] },
   onEvent: (event: EchoEvent) => void,
+  auth: AiAuth,
 ): Promise<Echo> {
-  const stream = client.beta.messages.stream({
-    model: "claude-opus-5-5",
+  // Both providers stream the JSON answer as text; pull the "reply" field out as it grows.
+  let json = "";
+  let sent = 0;
+  const onText = (text: string) => {
+    json += text;
+    const reply = partialString(json, "reply");
+    if (reply.length > sent) {
+      onEvent({ type: "delta", text: reply.slice(sent) });
+      sent = reply.length;
+    }
+  };
+  const restart = () => {
+    json = "";
+    if (sent > 0) onEvent({ type: "reset" });
+    sent = 0;
+  };
+
+  if (auth.provider === "openai") {
+    const stream = new OpenAI({ apiKey: auth.apiKey }).responses.stream({
+      model: OPENAI_MODEL,
+      instructions: SYSTEM,
+      input: echoPrompt(ctx),
+      reasoning: { effort: "low" },
+      text: { format: zodTextFormat(EchoSchema, "echo") },
+    });
+    for await (const event of stream) {
+      if (event.type === "response.output_text.delta") onText(event.delta);
+    }
+    const response = await stream.finalResponse();
+    if (!response.output_parsed) throw new Error(`No usable output (status: ${response.status})`);
+    return response.output_parsed;
+  }
+
+  const stream = new Anthropic({ apiKey: auth.apiKey }).beta.messages.stream({
+    model: CLAUDE_MODEL,
     max_tokens: 4000,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
@@ -69,24 +152,10 @@ export async function streamEcho(
     system: SYSTEM,
     messages: [{ role: "user", content: echoPrompt(ctx) }],
   });
-
-  let json = "";
-  let sent = 0;
   for await (const event of stream) {
-    if (event.type === "content_block_start" && event.content_block.type === "text") {
-      json = "";
-      if (sent > 0) onEvent({ type: "reset" });
-      sent = 0;
-    } else if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      json += event.delta.text;
-      const reply = partialString(json, "reply");
-      if (reply.length > sent) {
-        onEvent({ type: "delta", text: reply.slice(sent) });
-        sent = reply.length;
-      }
-    }
+    if (event.type === "content_block_start" && event.content_block.type === "text") restart();
+    else if (event.type === "content_block_delta" && event.delta.type === "text_delta") onText(event.delta.text);
   }
-
   const message = await stream.finalMessage();
   if (message.stop_reason === "refusal" || !message.parsed_output) {
     throw new Error(`No usable output (stop_reason: ${message.stop_reason})`);

@@ -1,17 +1,22 @@
 import { z } from "zod";
-import { aiEnabled, streamEcho, type Echo, type EchoEvent } from "@/lib/ai";
+import { keyProblemOf, resolveAuth, streamEcho, type Echo, type EchoEvent, type KeyProblem } from "@/lib/ai";
 import { fallbackEcho } from "@/lib/fallback";
 import { LIMITS } from "@/lib/limits";
+import { logAiError } from "@/lib/logAiError";
 import { clientIp, rateLimit, tooManyRequests } from "@/lib/rateLimit";
 
 const Body = z.object({
   task: z.string().max(LIMITS.task).optional(),
   reflection: z.string().max(LIMITS.reflection).optional(),
   goodThings: z.array(z.string().max(LIMITS.goodThing)).max(3).optional(),
+  /** The visitor's day ("YYYY-MM-DD"); the built-in reply picks tomorrow's card from it. */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 /** One JSON object per line: `delta` / `reset` while the reply is written, then a final `done`. */
-export type EchoStreamLine = EchoEvent | { type: "done"; echo: Echo; source: "ai" | "local" };
+export type EchoStreamLine =
+  | EchoEvent
+  | { type: "done"; echo: Echo; source: "ai" | "local"; keyProblem?: KeyProblem };
 
 export async function POST(request: Request) {
   const parsed = Body.safeParse(await request.json().catch(() => null));
@@ -20,6 +25,7 @@ export async function POST(request: Request) {
   }
   const goodThings = (parsed.data.goodThings ?? []).map((t) => t.trim());
   const reflection = parsed.data.reflection?.trim();
+  const date = parsed.data.date ?? new Date().toISOString().slice(0, 10);
   if (!reflection && !goodThings.some(Boolean)) {
     return Response.json({ error: "empty" }, { status: 400 });
   }
@@ -28,12 +34,14 @@ export async function POST(request: Request) {
   const wait = rateLimit(`echo:${clientIp(request)}`, 10, 60 * 60 * 1000);
   if (wait) return tooManyRequests(wait);
 
+  const auth = resolveAuth(request);
   const encoder = new TextEncoder();
   const body = new ReadableStream({
     async start(controller) {
       const send = (line: EchoStreamLine) => controller.enqueue(encoder.encode(JSON.stringify(line) + "\n"));
-      if (!aiEnabled) {
-        send({ type: "done", echo: fallbackEcho(goodThings), source: "local" });
+      // No key from the visitor or the server: use a built-in reply.
+      if (!auth) {
+        send({ type: "done", echo: fallbackEcho(goodThings, date), source: "local" });
         controller.close();
         return;
       }
@@ -42,12 +50,12 @@ export async function POST(request: Request) {
         const echo = await streamEcho({ task: parsed.data.task, reflection, goodThings }, (event) => {
           streamed = true;
           send(event);
-        });
+        }, auth);
         send({ type: "done", echo, source: "ai" });
       } catch (error) {
-        console.error("[api/echo]", error);
+        logAiError("api/echo", error);
         if (streamed) send({ type: "reset" });
-        send({ type: "done", echo: fallbackEcho(goodThings), source: "local" });
+        send({ type: "done", echo: fallbackEcho(goodThings, date), source: "local", keyProblem: keyProblemOf(error) });
       }
       controller.close();
     },

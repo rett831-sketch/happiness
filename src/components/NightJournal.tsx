@@ -1,19 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import type { Echo, TaskCard } from "@/lib/ai";
+import type { Echo, KeyProblem, TaskCard } from "@/lib/ai";
 import type { EchoStreamLine } from "@/app/api/echo/route";
+import { aiHeaders } from "@/lib/apiKey";
 import { LIMITS } from "@/lib/limits";
 import { dateKey, load, save, tomorrowKey } from "@/lib/storage";
+import AiNotice from "./AiNotice";
 import CardArt from "./CardArt";
 
 export type JournalEntry = Echo & { goodThings: string[]; reflection: string; task?: string };
 
-/** Posts the journal and calls `onText` with the reply as it streams in. Resolves with the final Echo. */
-async function requestEcho(body: unknown, onText: (text: string) => void): Promise<Echo> {
+type EchoResult = { echo: Echo; source: "ai" | "local"; keyProblem?: KeyProblem };
+
+/** Posts the journal and calls `onText` with the reply as it streams in. Resolves with the final result. */
+async function requestEcho(body: unknown, onText: (text: string) => void): Promise<EchoResult> {
   const res = await fetch("/api/echo", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...aiHeaders() },
     body: JSON.stringify(body),
   });
   if (res.status === 429) {
@@ -36,13 +40,19 @@ async function requestEcho(body: unknown, onText: (text: string) => void): Promi
       const line = JSON.parse(raw) as EchoStreamLine;
       if (line.type === "delta") onText((text += line.text));
       else if (line.type === "reset") onText((text = ""));
-      else return line.echo;
+      else return { echo: line.echo, source: line.source, keyProblem: line.keyProblem };
     }
   }
   throw new Error("連線中斷了，你寫的內容都還在，請再按一次。");
 }
 
-export default function NightJournal({ todayCard }: { todayCard: TaskCard | null }) {
+export default function NightJournal({
+  todayCard,
+  onOpenKeySettings,
+}: {
+  todayCard: TaskCard | null;
+  onOpenKeySettings: () => void;
+}) {
   const today = dateKey();
   const [saved, setSaved] = useState<JournalEntry | null>(() => load<JournalEntry>(`night:${today}`));
   const [goodThings, setGoodThings] = useState(["", "", ""]);
@@ -50,6 +60,8 @@ export default function NightJournal({ todayCard }: { todayCard: TaskCard | null
   const [streaming, setStreaming] = useState<string | null>(null); // reply text while it is being written
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false); // reopened the form after tonight was already saved
+  // Set when tonight's reply came from the built-in set (no key, or the key failed).
+  const [notice, setNotice] = useState<{ keyProblem?: KeyProblem } | null>(null);
 
   const sending = streaming !== null;
   const canSend = !sending && (reflection.trim() || goodThings.some((t) => t.trim()));
@@ -61,7 +73,8 @@ export default function NightJournal({ todayCard }: { todayCard: TaskCard | null
     setError(null);
     const task = todayCard?.task.slice(0, LIMITS.task);
     try {
-      const echo = await requestEcho({ task, reflection, goodThings }, setStreaming);
+      const { echo, source, keyProblem } = await requestEcho({ task, reflection, goodThings, date: today }, setStreaming);
+      setNotice(source === "local" ? { keyProblem } : null);
       const entry: JournalEntry = { ...echo, goodThings, reflection, task };
       save(`night:${today}`, entry);
       save(`tomorrow:${tomorrowKey()}`, echo.tomorrowCard);
@@ -108,6 +121,8 @@ export default function NightJournal({ todayCard }: { todayCard: TaskCard | null
             </div>
           </div>
         </section>
+
+        {result && notice && <AiNotice night keyProblem={notice.keyProblem} onOpenSettings={onOpenKeySettings} />}
 
         {result && (
           <div className="space-y-8 text-center">
