@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const TOTAL = 30;
 const BREATH = 10; // 4s inhale + 6s exhale, three breaths
@@ -14,16 +14,24 @@ const SENSES = [
   { label: "嚐到", text: "感受嘴裡淡淡的味道" },
 ];
 
-export default function BreathTimer() {
+export default function BreathTimer({ onStart, onComplete }: { onStart?: () => void; onComplete?: () => void }) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // Keep the latest callback without restarting the timer when the parent re-renders.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
 
   useEffect(() => {
     if (startedAt === null) return;
     const id = setInterval(() => {
       const t = (Date.now() - startedAt) / 1000;
       setElapsed(Math.min(t, TOTAL));
-      if (t >= TOTAL) clearInterval(id);
+      if (t >= TOTAL) {
+        clearInterval(id);
+        onCompleteRef.current?.();
+      }
     }, 100);
     return () => clearInterval(id);
   }, [startedAt]);
@@ -92,6 +100,7 @@ export default function BreathTimer() {
           onClick={() => {
             setElapsed(0);
             setStartedAt(Date.now());
+            onStart?.();
           }}
           className="mt-2 border-b border-ink/40 pb-1 font-sans text-sm tracking-[0.3em] transition hover:border-moss hover:text-moss"
         >

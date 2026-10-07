@@ -34,16 +34,16 @@ const brush = Ma_Shan_Zheng({
   preload: false,
 });
 
-const description = "每天兩次的幸福小練習：早晨翻開一張任務卡，夜晚寫下三件好事。";
+const description = "每天兩次的幸福練習：早晨翻開一張任務卡，夜晚寫下三件好事。";
 
 // The share image itself comes from app/opengraph-image.tsx.
 export const metadata: Metadata = {
-  title: "happiness",
+  title: "幸福練習課",
   description,
   // Opened from the iPhone home screen: full screen, with this name under the icon.
   appleWebApp: { capable: true, title: "幸福練習課", statusBarStyle: "default" },
   openGraph: {
-    title: "happiness 幸福小練習",
+    title: "幸福練習課",
     description,
     siteName: "happiness",
     locale: "zh_TW",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "happiness 幸福小練習",
+    title: "幸福練習課",
     description,
   },
 };

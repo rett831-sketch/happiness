@@ -49,9 +49,17 @@ async function requestEcho(body: unknown, onText: (text: string) => void): Promi
 export default function NightJournal({
   todayCard,
   onOpenKeySettings,
+  foxName,
+  onSendingChange,
+  onSaved,
 }: {
   todayCard: TaskCard | null;
   onOpenKeySettings: () => void;
+  /** The fox's name: the reply is written in its voice. */
+  foxName?: string;
+  onSendingChange?: (sending: boolean) => void;
+  /** Called after tonight's journal is saved. */
+  onSaved?: () => void;
 }) {
   const today = dateKey();
   const [saved, setSaved] = useState<JournalEntry | null>(() => load<JournalEntry>(`night:${today}`));
@@ -71,19 +79,22 @@ export default function NightJournal({
     if (!canSend) return;
     setStreaming("");
     setError(null);
+    onSendingChange?.(true);
     const task = todayCard?.task.slice(0, LIMITS.task);
     try {
-      const { echo, source, keyProblem } = await requestEcho({ task, reflection, goodThings, date: today }, setStreaming);
+      const { echo, source, keyProblem } = await requestEcho({ task, reflection, goodThings, date: today, foxName }, setStreaming);
       setNotice(source === "local" ? { keyProblem } : null);
       const entry: JournalEntry = { ...echo, goodThings, reflection, task };
       save(`night:${today}`, entry);
       save(`tomorrow:${tomorrowKey()}`, echo.tomorrowCard);
       setSaved(entry);
       setEditing(false);
+      onSaved?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "送出失敗了，請稍後再試。"); // inputs stay filled
     } finally {
       setStreaming(null);
+      onSendingChange?.(false);
     }
   }
 
@@ -216,7 +227,7 @@ export default function NightJournal({
           </button>
         )}
         <p className="text-center font-sans text-[11px] font-light leading-relaxed text-moon/40">
-          送出後，你寫的內容會傳給 Claude（Anthropic 的 AI）產生回饋。
+          設定了 AI 金鑰時，你寫的內容會傳給該 AI 服務（OpenAI 或 Claude）產生回饋。
           <br />
           日記本身只存在這個瀏覽器裡，不會存到我們的伺服器。
         </p>

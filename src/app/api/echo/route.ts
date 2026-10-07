@@ -11,6 +11,8 @@ const Body = z.object({
   goodThings: z.array(z.string().max(LIMITS.goodThing)).max(3).optional(),
   /** The visitor's day ("YYYY-MM-DD"); the built-in reply picks tomorrow's card from it. */
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  /** The visitor's fox companion: the reply is written in its voice. */
+  foxName: z.string().trim().max(12).optional(),
 });
 
 /** One JSON object per line: `delta` / `reset` while the reply is written, then a final `done`. */
@@ -26,6 +28,7 @@ export async function POST(request: Request) {
   const goodThings = (parsed.data.goodThings ?? []).map((t) => t.trim());
   const reflection = parsed.data.reflection?.trim();
   const date = parsed.data.date ?? new Date().toISOString().slice(0, 10);
+  const foxName = parsed.data.foxName || undefined;
   if (!reflection && !goodThings.some(Boolean)) {
     return Response.json({ error: "empty" }, { status: 400 });
   }
@@ -41,13 +44,13 @@ export async function POST(request: Request) {
       const send = (line: EchoStreamLine) => controller.enqueue(encoder.encode(JSON.stringify(line) + "\n"));
       // No key from the visitor or the server: use a built-in reply.
       if (!auth) {
-        send({ type: "done", echo: fallbackEcho(goodThings, date), source: "local" });
+        send({ type: "done", echo: fallbackEcho(goodThings, date, foxName), source: "local" });
         controller.close();
         return;
       }
       let streamed = false;
       try {
-        const echo = await streamEcho({ task: parsed.data.task, reflection, goodThings }, (event) => {
+        const echo = await streamEcho({ task: parsed.data.task, reflection, goodThings, foxName }, (event) => {
           streamed = true;
           send(event);
         }, auth);
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
       } catch (error) {
         logAiError("api/echo", error);
         if (streamed) send({ type: "reset" });
-        send({ type: "done", echo: fallbackEcho(goodThings, date), source: "local", keyProblem: keyProblemOf(error) });
+        send({ type: "done", echo: fallbackEcho(goodThings, date, foxName), source: "local", keyProblem: keyProblemOf(error) });
       }
       controller.close();
     },

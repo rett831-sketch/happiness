@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "幸福練習課",
     short_name: "幸福練習課",
-    description: "每天兩次的幸福小練習：早晨翻開一張任務卡，夜晚寫下三件好事。",
+    description: "每天兩次的幸福練習：早晨翻開一張任務卡，夜晚寫下三件好事。",
     lang: "zh-Hant",
     start_url: "/",
     display: "standalone",

@@ -106,7 +106,7 @@ export type EchoEvent = { type: "delta"; text: string } | { type: "reset" };
  * `reset` means the reply restarted (e.g. a fallback model took over) and shown text should be cleared.
  */
 export async function streamEcho(
-  ctx: { task?: string; reflection?: string; goodThings: string[] },
+  ctx: { task?: string; reflection?: string; goodThings: string[]; foxName?: string },
   onEvent: (event: EchoEvent) => void,
   auth: AiAuth,
 ): Promise<Echo> {
@@ -163,7 +163,7 @@ export async function streamEcho(
   return message.parsed_output;
 }
 
-function echoPrompt(ctx: { task?: string; reflection?: string; goodThings: string[] }) {
+function echoPrompt(ctx: { task?: string; reflection?: string; goodThings: string[]; foxName?: string }) {
   const things = ctx.goodThings.filter(Boolean).map((t, i) => `${i + 1}. ${t}`).join("\n");
   return `這是用戶今晚的感恩日記。
 今日早晨任務：${ctx.task || "（無）"}
@@ -171,6 +171,10 @@ function echoPrompt(ctx: { task?: string; reflection?: string; goodThings: strin
 今天的好事：
 ${things || "（未填寫）"}
 
-1. reply：針對他寫下的具體內容，給一段溫暖的正向回饋（點出他做得好的地方，不要空泛稱讚）。
+1. reply：針對他寫下的具體內容，給一段溫暖的正向回饋（點出他做得好的地方，不要空泛稱讚）。${
+    ctx.foxName
+      ? `\n   用使用者養的小狐狸「${ctx.foxName}」的口吻寫：第一人稱「我」，親切可愛但不幼稚，像一個一直陪在身邊、很珍惜他的小夥伴。`
+      : ""
+  }
 2. tomorrowCard：把這段回饋轉化成一張「明早的專屬卡片」，任務要延續他今天的好事或心得。`;
 }

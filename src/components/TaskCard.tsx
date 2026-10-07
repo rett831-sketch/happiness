@@ -10,6 +10,7 @@ export default function TaskCard({
   dateLabel,
   badge,
   failed = false,
+  onFlip,
 }: {
   card: Card | null;
   /** Seed for the artwork on the back of the card (e.g. today's date). */
@@ -18,6 +19,8 @@ export default function TaskCard({
   dateLabel: string;
   badge?: string;
   failed?: boolean;
+  /** Called when the card is turned over. */
+  onFlip?: () => void;
 }) {
   const [flipped, setFlipped] = useState(false);
   const ready = card !== null;
@@ -26,7 +29,11 @@ export default function TaskCard({
     <div className="mx-auto w-full max-w-sm animate-rise">
       <button
         type="button"
-        onClick={() => ready && setFlipped(true)}
+        onClick={() => {
+          if (!ready || flipped) return;
+          setFlipped(true);
+          onFlip?.();
+        }}
         disabled={!ready}
         aria-label={flipped ? "今日幸福任務卡" : "翻開今日幸福任務卡"}
         className="group block w-full perspective-[1400px]"

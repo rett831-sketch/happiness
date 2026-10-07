@@ -8,7 +8,7 @@ import { ridgePath, seededRandom } from "@/lib/landscape";
 // The fonts in assets/og contain only the characters used below. After changing
 // any text here, run `node scripts/og-fonts.mjs` to re-download them.
 
-export const alt = "happiness 幸福小練習：早晨翻開一張任務卡，夜晚寫下三件好事";
+export const alt = "幸福練習課：早晨翻開一張任務卡，夜晚寫下三件好事";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -120,7 +120,7 @@ export default function Image() {
         {/* title and the two daily moments */}
         <div style={{ position: "absolute", left: 500, top: 150, display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 30, letterSpacing: 8, color: MOSS }}>happiness</div>
-          <div style={{ marginTop: 10, fontSize: 92, letterSpacing: 10 }}>幸福小練習</div>
+          <div style={{ marginTop: 10, fontSize: 92, letterSpacing: 10 }}>幸福練習課</div>
           <div style={{ marginTop: 36, display: "flex", flexDirection: "column", gap: 14, fontSize: 32, color: INK_SOFT, letterSpacing: 3 }}>
             <span>早晨，翻開一張任務卡</span>
             <span>夜晚，寫下三件好事</span>
