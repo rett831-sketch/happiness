@@ -153,7 +153,7 @@ export default function NightJournal({ todayCard }: { todayCard: TaskCard | null
                 value={value}
                 onChange={(e) => setGoodThings((prev) => prev.map((t, j) => (j === i ? e.target.value : t)))}
                 maxLength={LIMITS.goodThing}
-                placeholder={["早餐店阿姨多給了一顆蛋", "同事順手幫我帶了咖啡", "再小的事，都算數"][i]}
+                placeholder={["早餐店阿姨叫我帥哥／美女", "同事揪團訂下午茶", "再小的事，都算數"][i]}
                 className={`${line} py-2`}
               />
             </label>
