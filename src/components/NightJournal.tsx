@@ -4,14 +4,15 @@ import { useState } from "react";
 import type { Echo, TaskCard } from "@/lib/ai";
 import { dateKey, load, save, tomorrowKey } from "@/lib/storage";
 
-type Saved = Echo & { goodThings: string[]; reflection: string };
+export type JournalEntry = Echo & { goodThings: string[]; reflection: string; task?: string };
 
 export default function NightJournal({ todayCard }: { todayCard: TaskCard | null }) {
   const today = dateKey();
-  const [saved, setSaved] = useState<Saved | null>(() => load<Saved>(`night:${today}`));
+  const [saved, setSaved] = useState<JournalEntry | null>(() => load<JournalEntry>(`night:${today}`));
   const [goodThings, setGoodThings] = useState(["", "", ""]);
   const [reflection, setReflection] = useState("");
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState(false);
 
   const canSend = !sending && (reflection.trim() || goodThings.some((t) => t.trim()));
 
@@ -19,17 +20,21 @@ export default function NightJournal({ todayCard }: { todayCard: TaskCard | null
     e.preventDefault();
     if (!canSend) return;
     setSending(true);
+    setError(false);
     try {
       const res = await fetch("/api/echo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task: todayCard?.task, reflection, goodThings }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const echo = (await res.json()) as Echo;
-      const entry: Saved = { ...echo, goodThings, reflection };
+      const entry: JournalEntry = { ...echo, goodThings, reflection, task: todayCard?.task };
       save(`night:${today}`, entry);
       save(`tomorrow:${tomorrowKey()}`, echo.tomorrowCard);
       setSaved(entry);
+    } catch {
+      setError(true); // inputs stay filled so nothing is lost
     } finally {
       setSending(false);
     }
@@ -85,6 +90,12 @@ export default function NightJournal({ todayCard }: { todayCard: TaskCard | null
           />
         ))}
       </fieldset>
+
+      {error && (
+        <p role="alert" className="text-center text-sm text-rose-300">
+          送出失敗了，你寫的內容都還在，請稍後再按一次。
+        </p>
+      )}
 
       <button
         type="submit"

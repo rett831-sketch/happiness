@@ -3,7 +3,15 @@
 import { useState } from "react";
 import type { TaskCard as Card } from "@/lib/ai";
 
-export default function TaskCard({ card, badge }: { card: Card | null; badge?: string }) {
+export default function TaskCard({
+  card,
+  badge,
+  failed = false,
+}: {
+  card: Card | null;
+  badge?: string;
+  failed?: boolean;
+}) {
   const [flipped, setFlipped] = useState(false);
   const ready = card !== null;
 
@@ -24,9 +32,9 @@ export default function TaskCard({ card, badge }: { card: Card | null; badge?: s
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-3xl bg-gradient-to-br from-amber-300 via-orange-300 to-rose-300 text-white shadow-xl backface-hidden">
           <span className="text-5xl">☀️</span>
           <p className="text-lg font-semibold tracking-widest">
-            {ready ? "點一下，翻開今日卡片" : "正在為你抽卡…"}
+            {ready ? "點一下，翻開今日卡片" : failed ? "卡片暫時沒抽到" : "正在為你抽卡…"}
           </p>
-          {!ready && <span className="h-1.5 w-24 animate-pulse rounded-full bg-white/70" />}
+          {!ready && !failed && <span className="h-1.5 w-24 animate-pulse rounded-full bg-white/70" />}
         </div>
 
         {/* front of card */}
