@@ -8,6 +8,7 @@ import type { JournalEntry } from "./NightJournal";
 import Ambience from "./Ambience";
 import CardArt from "./CardArt";
 import PosterHeader from "./PosterHeader";
+import WeeklyLetter from "./WeeklyLetter";
 import { fullDate } from "@/lib/zhDate";
 
 /** "2026-10-07" → 二〇二六年十月七日 · 星期三 */
@@ -24,12 +25,20 @@ export default function Collection() {
       <div className="mx-auto max-w-sm">
         <nav className="flex animate-fade justify-between">
           <p className="text-sm tracking-[0.2em] text-ink-soft">收藏冊</p>
-          <Link
-            href="/"
-            className="border-b border-ink/25 pb-0.5 font-sans text-xs tracking-[0.25em] text-ink-soft transition hover:border-moss hover:text-moss"
-          >
-            回到今天
-          </Link>
+          <span className="flex gap-5">
+            <Link
+              href="/fox"
+              className="border-b border-ink/25 pb-0.5 font-sans text-xs tracking-[0.25em] text-ink-soft transition hover:border-moss hover:text-moss"
+            >
+              小福圖鑑
+            </Link>
+            <Link
+              href="/"
+              className="border-b border-ink/25 pb-0.5 font-sans text-xs tracking-[0.25em] text-ink-soft transition hover:border-moss hover:text-moss"
+            >
+              回到今天
+            </Link>
+          </span>
         </nav>
         <PosterHeader glyph="藏" label="收藏" couplet={["拾葉成冊", "收好日子"]} seal="珍藏" className="mt-8" />
         {isClient && <Entries />}
@@ -54,6 +63,8 @@ function Entries() {
 
   return (
     <>
+      <WeeklyLetter entries={entries} />
+
       <p className="mt-10 flex items-baseline gap-3 border-t border-ink/15 pt-4">
         <span className="font-latin text-3xl">{String(entries.length).padStart(2, "0")}</span>
         <span className="font-sans text-xs tracking-[0.25em] text-ink-soft">張卡片</span>

@@ -23,7 +23,7 @@ const SCENES: Scene[] = [
 
 /** A small generated landscape (sky, sun or moon, mountain ridges, mist, sometimes pines or a lake), stable per `seed`. */
 // Place names for the scenes above, in the same order: where 小福 went exploring.
-const SCENE_NAMES = ["晨光山谷", "靜謐森林", "山中湖畔", "黃昏原野", "霧中山峰", "月夜湖邊", "青青草原"];
+export const SCENE_NAMES = ["晨光山谷", "靜謐森林", "山中湖畔", "黃昏原野", "霧中山峰", "月夜湖邊", "青青草原"];
 
 /** The place shown on the card drawn from `seed` (CardArt picks its scene with the first random number). */
 export function sceneName(seed: string) {

@@ -1,7 +1,7 @@
 // The fox companion's state: name, growth points, and which care actions happened each day.
 // Stored in this browser's localStorage, like the journal.
-import type { FoxStage } from "@/components/Fox";
-import { dateKey, load, save } from "./storage";
+import type { FoxPose, FoxStage } from "@/components/Fox";
+import { dateKey, load, remove, save } from "./storage";
 
 export type CareKind = "task" | "breath" | "journal";
 
@@ -94,4 +94,46 @@ export function daysBetween(from: string, to: string) {
 /** Number of different days the visitor has cared for the fox. */
 export function daysTogether(state: FoxState) {
   return Object.keys(state.days).length;
+}
+
+// --- handbook (圖鑑) ---
+
+/** The most points a day can give (all three kinds of care). */
+export const MAX_POINTS_PER_DAY = CARE.task.points + CARE.breath.points + CARE.journal.points;
+
+/** Fewest days of full care until `stage` is reached (0 if already there). */
+export function daysUntil(points: number, stage: FoxStage) {
+  return Math.max(0, Math.ceil((STAGE_AT[stage] - points) / MAX_POINTS_PER_DAY));
+}
+
+/** Poses the visitor has seen the fox do, for the pose collection. */
+export function loadSeenPoses(): FoxPose[] {
+  return load<FoxPose[]>("foxPoses") ?? [];
+}
+
+export function markPoseSeen(pose: FoxPose) {
+  const seen = loadSeenPoses();
+  if (!seen.includes(pose)) save("foxPoses", [...seen, pose]);
+}
+
+// --- demo mode: fast-forward for a presentation, then put the real fox back ---
+
+type Backup = { fox: FoxState | null; poses: FoxPose[] };
+
+export function hasDemoBackup() {
+  return load<Backup>("foxBackup") !== null;
+}
+
+/** Saves the real fox once, before the first demo change. */
+export function backupForDemo() {
+  if (!hasDemoBackup()) save("foxBackup", { fox: loadFox(), poses: loadSeenPoses() } satisfies Backup);
+}
+
+export function restoreFromDemo() {
+  const backup = load<Backup>("foxBackup");
+  if (!backup) return;
+  if (backup.fox) saveFox(backup.fox);
+  else remove("fox");
+  save("foxPoses", backup.poses);
+  remove("foxBackup");
 }

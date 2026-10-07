@@ -8,6 +8,7 @@ import { LIMITS } from "@/lib/limits";
 import { dateKey, load, save, tomorrowKey } from "@/lib/storage";
 import AiNotice from "./AiNotice";
 import CardArt from "./CardArt";
+import MicButton from "./MicButton";
 
 export type JournalEntry = Echo & { goodThings: string[]; reflection: string; task?: string };
 
@@ -173,7 +174,7 @@ export default function NightJournal({
         <SectionLabel title="三件好事" note="今天，有哪些小小的美好" />
         <div className="mt-6 space-y-5">
           {goodThings.map((value, i) => (
-            <label key={i} className="flex items-baseline gap-4">
+            <label key={i} className="flex items-center gap-3">
               <span className="w-5 shrink-0 text-lg font-light text-sun/80">{["一", "二", "三"][i]}</span>
               <input
                 value={value}
@@ -181,6 +182,14 @@ export default function NightJournal({
                 maxLength={LIMITS.goodThing}
                 placeholder={["早餐店阿姨叫我帥哥／美女", "同事揪團訂下午茶", "再小的事，都算數"][i]}
                 className={`${line} py-2`}
+              />
+              <MicButton
+                value={value}
+                onText={(text) =>
+                  setGoodThings((prev) => prev.map((t, j) => (j === i ? text.slice(0, LIMITS.goodThing) : t)))
+                }
+                label={`第${["一", "二", "三"][i]}件好事`}
+                night
               />
             </label>
           ))}
@@ -190,8 +199,11 @@ export default function NightJournal({
       <label className="block">
         <div className="flex items-baseline justify-between">
           <SectionLabel title="心得" note="做完今天的事，有什麼感受" />
-          <span className="font-latin text-sm text-moon/40">
-            {reflection.length}/{LIMITS.reflection}
+          <span className="flex items-center gap-1">
+            <span className="font-latin text-sm text-moon/40">
+              {reflection.length}/{LIMITS.reflection}
+            </span>
+            <MicButton value={reflection} onText={(text) => setReflection(text.slice(0, LIMITS.reflection))} label="心得" night />
           </span>
         </div>
         <textarea
@@ -228,6 +240,8 @@ export default function NightJournal({
         )}
         <p className="text-center font-sans text-[11px] font-light leading-relaxed text-moon/40">
           設定了 AI 金鑰時，你寫的內容會傳給該 AI 服務（OpenAI 或 Claude）產生回饋。
+          <br />
+          語音輸入由手機瀏覽器提供，可能會經由瀏覽器的語音服務辨識。
           <br />
           日記本身只存在這個瀏覽器裡，不會存到我們的伺服器。
         </p>

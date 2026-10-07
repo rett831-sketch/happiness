@@ -171,8 +171,11 @@ function face({ x, y, r, mood }: { x: number; y: number; r: number; mood: FoxMoo
     <g>
       {blush(-1)}
       {blush(1)}
-      {eye(-1)}
-      {eye(1)}
+      {/* open eyes blink now and then (see .fox-alive in globals.css) */}
+      <g className={mood === "calm" || mood === "excited" ? "fox-blink" : undefined}>
+        {eye(-1)}
+        {eye(1)}
+      </g>
       <ellipse cx={x} cy={y + r * 0.9} rx={r * 0.1} ry={r * 0.08} fill={INK} />
     </g>
   );
@@ -184,7 +187,7 @@ function face({ x, y, r, mood }: { x: number; y: number; r: number; mood: FoxMoo
 function tail({ x, y, s }: { x: number; y: number; s: number }) {
   const p = (dx: number, dy: number) => `${x + dx * s} ${y + dy * s}`;
   return (
-    <g>
+    <g className="fox-tail">
       <path d={`M ${p(0, 0)} C ${p(30, 4)} ${p(56, -14)} ${p(56, -44)} C ${p(56, -66)} ${p(46, -82)} ${p(36, -90)} C ${p(30, -66)} ${p(24, -40)} ${p(0, -22)} Z`} fill={FUR_R} />
       <path d={`M ${p(56, -58)} C ${p(54, -72)} ${p(46, -84)} ${p(36, -90)} C ${p(34, -78)} ${p(33, -68)} ${p(32, -60)} C ${p(40, -56)} ${p(48, -56)} ${p(56, -58)} Z`} fill={CREAM_L} />
     </g>
@@ -569,19 +572,29 @@ export default function Fox({
   pose = "sit",
   mood,
   size = 200,
+  animated = false,
 }: {
   stage: FoxStage;
   pose?: FoxPose;
   /** Defaults to the expression that suits the pose. */
   mood?: FoxMood;
   size?: number;
+  /** Gentle idle motion: breathing, blinking, a swaying tail. */
+  animated?: boolean;
 }) {
   const m = mood ?? DEFAULT_MOOD[pose];
+  const motion = pose === "jump" ? " fox-hop" : pose === "sleep" ? " fox-slow" : "";
   return (
-    <svg viewBox="0 0 200 200" width={size} height={size} aria-label={`小福（${STAGE_NAMES[stage]}・${POSE_NAMES[pose]}）`}>
+    <svg
+      viewBox="0 0 200 200"
+      width={size}
+      height={size}
+      className={animated ? "fox-alive" : undefined}
+      aria-label={`小福（${STAGE_NAMES[stage]}・${POSE_NAMES[pose]}）`}
+    >
       {stage === 5 && <circle cx={100} cy={112} r={86} fill={FLOWER} opacity={0.14} />}
       <ellipse cx={100} cy={186} rx={pose === "jump" ? 34 : 50} ry={pose === "jump" ? 4 : 6} fill={INK} opacity={0.08} />
-      {posedFox(stage, pose, m)}
+      <g className={`fox-body${motion}`}>{posedFox(stage, pose, m)}</g>
     </svg>
   );
 }

@@ -199,13 +199,16 @@ function Flow() {
           <p className="text-base tracking-[0.3em]">幸福練習課</p>
           <p className={`mt-0.5 text-xs tracking-[0.2em] ${night ? "text-moon/60" : "text-ink-soft"}`}>{monthDayWeekday(day)}</p>
         </div>
-        <div className="flex gap-5">
+        <div className="flex gap-4">
           <button type="button" onClick={() => setMode(night ? "morning" : "night")} className={link} title="手動切換早晨 / 夜間">
             {night ? "晨" : "夜"}
           </button>
           <button type="button" onClick={() => setKeyOpen(true)} className={link}>
             金鑰
           </button>
+          <Link href="/fox" className={link}>
+            圖鑑
+          </Link>
           <Link href="/collection" className={link}>
             收藏
           </Link>

@@ -178,3 +178,57 @@ ${things || "（未填寫）"}
   }
 2. tomorrowCard：把這段回饋轉化成一張「明早的專屬卡片」，任務要延續他今天的好事或心得。`;
 }
+
+// ---------------------------------------------------------------------------
+// Weekly letter from the fox
+// ---------------------------------------------------------------------------
+
+const WeeklySchema = z.object({
+  letter: z.string().describe("小狐狸寫給使用者的週報信，150–250 字"),
+  themes: z.array(z.string()).describe("這週反覆出現的主題，1–3 個，每個 2–6 個字"),
+});
+export type Weekly = z.infer<typeof WeeklySchema>;
+
+export type WeeklyEntry = { date: string; goodThings: string[]; reflection?: string; task?: string };
+
+export async function generateWeekly(ctx: { entries: WeeklyEntry[]; foxName?: string }, auth: AiAuth): Promise<Weekly> {
+  const name = ctx.foxName || "小福";
+  const days = ctx.entries
+    .map((e) => {
+      const things = e.goodThings.filter(Boolean).join("；") || "（未填寫）";
+      return `${e.date}｜好事：${things}${e.reflection ? `｜心得：${e.reflection}` : ""}${e.task ? `｜當天任務：${e.task}` : ""}`;
+    })
+    .join("\n");
+  const prompt = `這是使用者過去一週的感恩日記：
+${days}
+
+請用他養的小狐狸「${name}」的口吻（第一人稱「我」，親切可愛但不幼稚），寫一封這週的回顧信給他。
+- letter：150–250 字。具體提到他寫過的事，指出這週反覆出現的主題（例如提到家人幾次），溫暖地肯定他，最後給下週一個小小的期待。用一般段落，不要條列，不要 emoji，結尾不用署名。
+- themes：1–3 個這週反覆出現的主題，每個 2–6 個字，例如「家人的陪伴」「好吃的食物」。`;
+
+  if (auth.provider === "openai") {
+    const response = await new OpenAI({ apiKey: auth.apiKey }).responses.parse({
+      model: OPENAI_MODEL,
+      instructions: SYSTEM,
+      input: prompt,
+      reasoning: { effort: "low" },
+      text: { format: zodTextFormat(WeeklySchema, "weekly_letter") },
+    });
+    if (!response.output_parsed) throw new Error(`No usable output (status: ${response.status})`);
+    return response.output_parsed;
+  }
+
+  const response = await new Anthropic({ apiKey: auth.apiKey }).beta.messages.parse({
+    model: CLAUDE_MODEL,
+    max_tokens: 4000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    output_config: { effort: "low", format: betaZodOutputFormat(WeeklySchema) },
+    system: SYSTEM,
+    messages: [{ role: "user", content: prompt }],
+  });
+  if (response.stop_reason === "refusal" || !response.parsed_output) {
+    throw new Error(`No usable output (stop_reason: ${response.stop_reason})`);
+  }
+  return response.parsed_output;
+}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Fox, { STAGE_NAMES, type FoxMood, type FoxPose } from "./Fox";
-import { CARE, progressToNext, stageFor, type CareKind, type FoxState } from "@/lib/fox";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import Fox, { POSE_NAMES, STAGE_NAMES, type FoxMood, type FoxPose } from "./Fox";
+import { CARE, loadSeenPoses, markPoseSeen, progressToNext, stageFor, type CareKind, type FoxState } from "@/lib/fox";
 
 /** What is happening right now; decides 小福's pose and what it says. */
 export type Situation =
@@ -67,6 +68,12 @@ export default function FoxCompanion({
   const stage = stageFor(fox.points);
   const asleep = situation === "lateSleep" && !tapped;
 
+  // Every pose shown counts toward the pose collection in the handbook (/fox).
+  // Poses not in the collection when the page opened are announced as newly collected.
+  const [collectedBefore] = useState(loadSeenPoses);
+  const newlyCollected = !collectedBefore.includes(pose);
+  useEffect(() => markPoseSeen(pose), [pose]);
+
   return (
     <section className="mx-auto w-full max-w-sm animate-rise">
       <div className="flex items-end gap-3">
@@ -77,24 +84,37 @@ export default function FoxCompanion({
           className="shrink-0 transition-transform active:scale-95"
         >
           <span key={`${pose}-${stage}`} className="block animate-fade">
-            <Fox stage={stage} pose={pose} mood={mood} size={150} />
+            <Fox stage={stage} pose={pose} mood={mood} size={150} animated />
           </span>
         </button>
 
-        <div className="relative mb-10 flex-1">
-          <p
-            key={line}
-            className={`animate-fade rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${
-              night ? "bg-white/10 text-moon" : "bg-card text-ink shadow-sm"
-            } ${asleep ? "opacity-70" : ""}`}
-          >
-            {line}
-          </p>
-          {/* the bubble's little tail, pointing at 小福 */}
-          <span
-            className={`absolute -left-1.5 bottom-4 size-3 rotate-45 ${night ? "bg-white/10" : "bg-card"}`}
-            aria-hidden
-          />
+        <div className="mb-10 flex-1">
+          <div className="relative">
+            <p
+              key={line}
+              className={`animate-fade rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${
+                night ? "bg-white/10 text-moon" : "bg-card text-ink shadow-sm"
+              } ${asleep ? "opacity-70" : ""}`}
+            >
+              {line}
+            </p>
+            {/* the bubble's little tail, pointing at 小福 */}
+            <span
+              className={`absolute -left-1.5 bottom-4 size-3 rotate-45 ${night ? "bg-white/10" : "bg-card"}`}
+              aria-hidden
+            />
+          </div>
+          {newlyCollected && (
+            <Link
+              href="/fox"
+              key={`new-${pose}`}
+              className={`mt-2 block animate-rise font-sans text-xs tracking-[0.1em] underline-offset-4 hover:underline ${night ? "text-sun" : "text-seal"}`}
+            >
+              收集到新動作「{POSE_NAMES[pose]}」
+              <br />
+              看圖鑑 ›
+            </Link>
+          )}
           {gained && (
             <p key={gained} className={`mt-2 animate-rise font-sans text-xs tracking-[0.2em] ${night ? "text-sun" : "text-moss"}`}>
               +{CARE[gained].points} {CARE[gained].label}
@@ -105,9 +125,9 @@ export default function FoxCompanion({
 
       <div className={`mt-1 font-sans text-xs ${night ? "text-moon/70" : "text-ink-soft"}`}>
         <div className="flex items-baseline justify-between gap-3">
-          <span className="tracking-[0.15em]">
-            {fox.name} · {STAGE_NAMES[stage]}
-          </span>
+          <Link href="/fox" className="tracking-[0.15em] underline-offset-4 hover:underline">
+            {fox.name} · {STAGE_NAMES[stage]} ›
+          </Link>
           <span className="tabular-nums">
             陽光 {fox.sun} · 露水 {fox.dew} · 微風 {fox.breeze}
           </span>

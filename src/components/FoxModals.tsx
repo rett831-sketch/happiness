@@ -26,7 +26,7 @@ export function FoxWelcome({ onDone }: { onDone: (name: string) => void }) {
   return (
     <Modal label="認識你的小狐狸">
       <div className="flex justify-center">
-        <Fox stage={1} pose="sleep" size={160} />
+        <Fox stage={1} pose="sleep" size={160} animated />
       </div>
       <h2 className="mt-2 text-xl tracking-[0.15em]">一隻小狐狸來了</h2>
       <p className="mt-2 text-sm font-light leading-relaxed text-ink-soft">牠縮成一顆小毛球，在你身邊睡著了。幫牠取個名字吧。</p>
@@ -69,7 +69,7 @@ export function FoxGrewUp({ name, stage, onClose }: { name: string; stage: FoxSt
       <div className="relative flex justify-center">
         <div className="absolute inset-x-10 inset-y-2 rounded-full bg-sun/20 blur-2xl" aria-hidden />
         <span className="relative">
-          <Fox stage={stage} pose="jump" size={190} />
+          <Fox stage={stage} pose="jump" size={190} animated />
         </span>
       </div>
       <p className="mt-2 font-sans text-xs tracking-[0.4em] text-moss">長大了</p>
