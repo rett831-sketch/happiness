@@ -22,6 +22,9 @@ const SYSTEM = `你是「happiness」的幸福教練，語氣溫暖、簡潔、�
 
 const client = new Anthropic();
 
+/** Without a key the app uses the built-in cards and replies (see fallback.ts). */
+export const aiEnabled = Boolean(process.env.ANTHROPIC_API_KEY);
+
 async function ask<T extends z.ZodType>(schema: T, prompt: string): Promise<z.infer<T>> {
   const response = await client.beta.messages.parse({
     model: "claude-opus-5-5",

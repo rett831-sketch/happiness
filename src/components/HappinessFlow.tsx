@@ -21,35 +21,6 @@ const modeForNow = (): Mode => {
   return h >= DAY_START_HOUR && h < 17 ? "morning" : "night";
 };
 
-// Open-Meteo WMO weather codes → short description.
-function describeWeather(code: number, temp: number) {
-  const sky =
-    code === 0 ? "晴朗" :
-    code <= 3 ? "多雲" :
-    code <= 48 ? "有霧" :
-    code <= 67 || (code >= 80 && code <= 82) ? "下雨" :
-    code <= 77 || code === 85 || code === 86 ? "下雪" :
-    "雷雨";
-  return `${sky}，${Math.round(temp)}°C`;
-}
-
-async function fetchWeather(): Promise<string | undefined> {
-  if (!("geolocation" in navigator)) return undefined;
-  try {
-    const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, maximumAge: 3_600_000 }),
-    );
-    const { latitude, longitude } = pos.coords;
-    const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`,
-    );
-    const data = await res.json();
-    return describeWeather(data.current.weather_code, data.current.temperature_2m);
-  } catch {
-    return undefined; // permission denied or offline: weekday alone is enough
-  }
-}
-
 // Last night's reward card becomes this morning's card.
 function loadTodayCard(): StoredCard | null {
   const key = dateKey();
@@ -81,11 +52,11 @@ function Flow() {
     let cancelled = false;
     (async () => {
       try {
-        const weather = await fetchWeather();
+        // Weather is looked up on the server from the approximate IP location: no permission prompt.
         const res = await fetch("/api/card", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ weekdayIndex: logicalDate().getDay(), weather }),
+          body: JSON.stringify({ weekdayIndex: logicalDate().getDay() }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { card, source } = (await res.json()) as { card: Card; source: "ai" | "local" };

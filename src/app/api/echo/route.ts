@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { streamEcho, type Echo, type EchoEvent } from "@/lib/ai";
+import { aiEnabled, streamEcho, type Echo, type EchoEvent } from "@/lib/ai";
 import { fallbackEcho } from "@/lib/fallback";
 import { LIMITS } from "@/lib/limits";
 import { clientIp, rateLimit, tooManyRequests } from "@/lib/rateLimit";
@@ -32,6 +32,11 @@ export async function POST(request: Request) {
   const body = new ReadableStream({
     async start(controller) {
       const send = (line: EchoStreamLine) => controller.enqueue(encoder.encode(JSON.stringify(line) + "\n"));
+      if (!aiEnabled) {
+        send({ type: "done", echo: fallbackEcho(goodThings), source: "local" });
+        controller.close();
+        return;
+      }
       let streamed = false;
       try {
         const echo = await streamEcho({ task: parsed.data.task, reflection, goodThings }, (event) => {
