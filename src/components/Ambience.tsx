@@ -50,10 +50,7 @@ export default function Ambience({ night }: { night: boolean }) {
       {night ? (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-night via-[#131f1e] to-[#1b2b29]" />
-          {/* moon */}
-          <div className="absolute right-[16%] top-[9%] animate-fade">
-            <div className="size-12 rounded-full bg-moon shadow-[0_0_90px_30px_rgba(232,234,217,0.13)]" />
-          </div>
+          {/* the moon itself is drawn in the evening header (PosterHeader), so it never sits under text */}
           {STARS.map((s, i) => (
             <span
               key={i}
@@ -78,7 +75,7 @@ export default function Ambience({ night }: { night: boolean }) {
             {Array.from({ length: 6 }, (_, i) => (
               <rect
                 key={i}
-                x={336 - 14 + i * 2.2} // under the moon (right 16%)
+                x={336 - 14 + i * 2.2} // moonlight on the lake
                 y={258 + i * 6.5}
                 width={28 - i * 4.4}
                 height={1.3}

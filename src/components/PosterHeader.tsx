@@ -29,6 +29,13 @@ export default function PosterHeader({
         className={`absolute inset-y-0 left-2 right-8 rounded-[2px] bamboo-blind ${night ? "opacity-[0.07]" : "opacity-90"}`}
       />
       <Branch night={night} className="absolute -right-5 -top-6 h-60 w-28" />
+      {night && (
+        // the moon, in the empty space under the couplet: it scrolls with the header, so it never covers text
+        <div
+          aria-hidden
+          className="absolute bottom-10 left-[52%] size-11 animate-fade rounded-full bg-moon shadow-[0_0_80px_26px_rgba(232,234,217,0.14)]"
+        />
+      )}
 
       <div className="relative flex items-start gap-4 pl-6 pr-16 pt-10">
         <div className="flex shrink-0 flex-col items-center">
