@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Ma_Shan_Zheng, Noto_Sans_TC, Noto_Serif_TC } from "next/font/google";
 import "./globals.css";
 
@@ -40,6 +40,8 @@ const description = "每天兩次的幸福小練習：早晨翻開一張任務�
 export const metadata: Metadata = {
   title: "happiness",
   description,
+  // Opened from the iPhone home screen: full screen, with this name under the icon.
+  appleWebApp: { capable: true, title: "幸福", statusBarStyle: "default" },
   openGraph: {
     title: "happiness 幸福小練習",
     description,
@@ -52,6 +54,10 @@ export const metadata: Metadata = {
     title: "happiness 幸福小練習",
     description,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f2ecdc", // rice-paper background, used for the browser/status bar
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
