@@ -34,9 +34,24 @@ const brush = Ma_Shan_Zheng({
   preload: false,
 });
 
+const description = "每天兩次的幸福小練習：早晨翻開一張任務卡，夜晚寫下三件好事。";
+
+// The share image itself comes from app/opengraph-image.tsx.
 export const metadata: Metadata = {
   title: "happiness",
-  description: "每天兩次的幸福小練習：早晨任務卡與晚間感恩回顧",
+  description,
+  openGraph: {
+    title: "happiness 幸福小練習",
+    description,
+    siteName: "happiness",
+    locale: "zh_TW",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "happiness 幸福小練習",
+    description,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
