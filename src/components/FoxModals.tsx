@@ -19,11 +19,16 @@ export function FoxWelcome({ onDone }: { onDone: (name: string) => void }) {
   const trimmed = name.trim();
   return (
     <Modal label="認識你的小狐狸">
-      <div className="flex justify-center">
+      {/* the sleeping fox fills only the lower half of its drawing; pull it up into the empty top */}
+      <div className="-mt-20 flex justify-center">
         <Fox stage={1} pose="sleep" size={160} animated />
       </div>
-      <h2 className="mt-2 text-xl tracking-[0.15em]">一隻小狐狸來了</h2>
-      <p className="mt-2 text-sm font-light leading-relaxed text-ink-soft">牠縮成一顆小毛球，在你身邊睡著了。幫牠取個名字吧。</p>
+      <h2 className="mt-1 text-xl tracking-[0.15em]">一隻小狐狸來了</h2>
+      <p className="mt-3 text-sm font-light leading-loose text-ink-soft">
+        牠縮成一顆小毛球，在你身邊睡著了。
+        <br />
+        幫牠取個名字吧。
+      </p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -36,14 +41,20 @@ export function FoxWelcome({ onDone }: { onDone: (name: string) => void }) {
           onChange={(e) => setName(e.target.value)}
           maxLength={6}
           aria-label="小狐狸的名字"
+          onFocus={(e) => e.target.select()}
           className="w-40 border-b border-ink/30 bg-transparent py-1.5 text-center text-lg tracking-[0.2em] outline-none focus:border-moss"
         />
-        <ul className="mx-auto mt-6 max-w-[16rem] space-y-1.5 text-left text-sm font-light leading-relaxed text-ink-soft">
+        <p className="mt-2 font-sans text-xs font-light text-ink-faint">可以改成你喜歡的名字</p>
+        <ul className="mt-6 space-y-1.5 text-sm font-light leading-relaxed text-ink-soft">
           <li>早上完成任務，給牠<span className="text-ink">{CARE.task.label}</span></li>
           <li>一起呼吸三十秒，給牠<span className="text-ink">{CARE.breath.label}</span></li>
           <li>晚上寫下三件好事，給牠<span className="text-ink">{CARE.journal.label}</span></li>
         </ul>
-        <p className="mt-3 text-xs font-light text-ink-faint">牠會慢慢長大。就算你幾天沒來，牠也只是睡著等你。</p>
+        <p className="mt-5 text-xs font-light leading-relaxed text-ink-faint">
+          牠會慢慢長大。
+          <br />
+          就算你幾天沒來，牠也只是睡著等你。
+        </p>
         <button
           type="submit"
           disabled={!trimmed}
