@@ -35,7 +35,8 @@ import { monthDay, monthDayWeekday } from "@/lib/zhDate";
 import { asReadNextMorning } from "@/lib/cardText";
 
 type Mode = "morning" | "night";
-type StoredCard = { card: Card; fromLastNight: boolean };
+// source: who wrote a freshly drawn card (missing on gifted cards and on cards saved before it existed).
+type StoredCard = { card: Card; fromLastNight: boolean; source?: "ai" | "local" };
 
 // Morning from DAY_START_HOUR (05:00) to 16:59, night otherwise.
 const modeForNow = (): Mode => {
@@ -153,7 +154,7 @@ function Flow() {
           source: "ai" | "local";
           keyProblem?: KeyProblem;
         };
-        const stored = { card, fromLastNight: false };
+        const stored: StoredCard = { card, fromLastNight: false, source };
         // Keep AI cards, and built-in cards for visitors without a key (so the card doesn't change
         // during the day). With a key, a temporary AI failure shouldn't lock in a built-in card.
         if (source === "ai" || !getApiKey()) save(`card:${cardKey}`, stored);
@@ -170,9 +171,10 @@ function Flow() {
     };
   }, [today, mode, attempt, cardKey]);
 
-  // After adding or changing a key, redraw today's built-in card with AI right away.
+  // After adding or changing a key, redraw today's built-in card with AI right away
+  // (unless it is last night's gift, or today's task is already done with it).
   function onKeyChange() {
-    if (mode === "morning" && today && !load(`card:${cardKey}`)) {
+    if (mode === "morning" && today && !today.fromLastNight && today.source !== "ai" && !taskDone && getApiKey()) {
       setToday(null);
       setCardInfo(null);
       setFailed(false);
@@ -223,9 +225,9 @@ function Flow() {
       <nav className="mx-auto flex max-w-sm animate-fade items-center justify-between">
         <div>
           <p className="text-base tracking-[0.3em]">幸福練習課</p>
-          <p className={`mt-0.5 text-xs tracking-[0.2em] ${night ? "text-moon/60" : "text-ink-soft"}`}>{monthDayWeekday(day)}</p>
+          <p className={`mt-0.5 text-xs tracking-[0.12em] min-[360px]:tracking-[0.2em] ${night ? "text-moon/60" : "text-ink-soft"}`}>{monthDayWeekday(day)}</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3 min-[360px]:gap-4">
           <button
             type="button"
             onClick={() => {

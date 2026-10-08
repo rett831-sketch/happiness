@@ -71,6 +71,11 @@
   }
 }
 
+/* decorative layers reach past the edges; clip (unlike hidden) keeps position: sticky working */
+html,
+body {
+  overflow-x: clip;
+}
 body {
   background: var(--color-paper);
   color: var(--color-ink);
