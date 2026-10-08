@@ -90,7 +90,21 @@ body {
 .fox-alive .fox-body {
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: fox-breathe 3.6s ease-in-out infinite;
+  animation: fox-breathe 3.2s ease-in-out infinite;
+}
+.fox-alive .fox-head {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: fox-head 5s ease-in-out infinite alternate;
+}
+.fox-alive .fox-ear {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: fox-ear-l 4.6s ease-in-out infinite;
+}
+.fox-alive .fox-ear-r {
+  animation-name: fox-ear-r;
+  animation-delay: -2.3s;
 }
 .fox-alive .fox-body.fox-slow {
   animation-duration: 5.5s;
@@ -101,28 +115,63 @@ body {
 .fox-alive .fox-tail {
   transform-box: fill-box;
   transform-origin: 0% 100%;
-  animation: fox-tail 2.8s ease-in-out infinite alternate;
+  animation: fox-tail 1.7s ease-in-out infinite alternate;
+}
+/* the tail wrapped around the feet (sitting) sways gently from its root on the right */
+.fox-alive .fox-tail-curl {
+  transform-box: fill-box;
+  transform-origin: 100% 0%;
+  animation: fox-tail-curl 2.2s ease-in-out infinite alternate;
+}
+@keyframes fox-tail-curl {
+  from { transform: rotate(-3deg); }
+  to { transform: rotate(5deg); }
 }
 .fox-alive .fox-blink {
   transform-box: fill-box;
   transform-origin: 50% 50%;
-  animation: fox-blink 5s infinite;
+  animation: fox-blink 3.6s infinite;
 }
 @keyframes fox-breathe {
   0%, 100% { transform: scale(1, 1); }
-  50% { transform: scale(1.012, 1.03); }
+  50% { transform: scale(1.02, 1.055); }
+}
+@keyframes fox-head {
+  from { transform: rotate(-2.5deg); }
+  to { transform: rotate(2.5deg); }
+}
+/* a quick twitch now and then */
+@keyframes fox-ear-l {
+  0%, 84%, 100% { transform: rotate(0); }
+  88% { transform: rotate(-12deg); }
+  92% { transform: rotate(4deg); }
+}
+@keyframes fox-ear-r {
+  0%, 84%, 100% { transform: rotate(0); }
+  88% { transform: rotate(12deg); }
+  92% { transform: rotate(-4deg); }
+}
+/* a little bounce whenever the pose changes, e.g. when tapped */
+@keyframes fox-pop {
+  0% { transform: scale(0.9); opacity: 0.4; }
+  55% { transform: scale(1.07); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.fox-pop {
+  transform-origin: 50% 100%;
+  animation: fox-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
 }
 @keyframes fox-hop {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6%); }
 }
 @keyframes fox-tail {
-  from { transform: rotate(-4deg); }
-  to { transform: rotate(5deg); }
+  from { transform: rotate(-9deg); }
+  to { transform: rotate(11deg); }
 }
 @keyframes fox-blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.1); }
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.08); }
 }
 
 ::selection {

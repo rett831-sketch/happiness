@@ -83,7 +83,7 @@ export default function FoxCompanion({
           aria-label={`摸摸${fox.name}`}
           className="shrink-0 transition-transform active:scale-95"
         >
-          <span key={`${pose}-${stage}`} className="block animate-fade">
+          <span key={`${pose}-${stage}`} className="fox-pop block">
             <Fox stage={stage} pose={pose} mood={mood} size={150} animated />
           </span>
         </button>

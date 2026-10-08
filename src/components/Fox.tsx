@@ -121,10 +121,15 @@ function head({ x, y, r }: Pose["head"]) {
   const ei = halves(x, y, r, EAR_IN);
   return (
     <g>
-      <path d={e.left} fill={FUR_L} />
-      <path d={e.right} fill={FUR_R} />
-      <path d={ei.left} fill={DARK} />
-      <path d={ei.right} fill={DARK} />
+      {/* each ear in its own group so it can twitch (see .fox-alive in globals.css) */}
+      <g className="fox-ear fox-ear-l">
+        <path d={e.left} fill={FUR_L} />
+        <path d={ei.left} fill={DARK} />
+      </g>
+      <g className="fox-ear fox-ear-r">
+        <path d={e.right} fill={FUR_R} />
+        <path d={ei.right} fill={DARK} />
+      </g>
       <path d={h.left} fill={FUR_L} />
       <path d={h.right} fill={FUR_R} />
       <path d={m.left} fill={CREAM_L} />
@@ -297,7 +302,7 @@ function heartShape(x: number, y: number, s: number) {
 function tailAroundFeet(x: number, y: number, rx: number, ry: number) {
   const p = (dx: number, dy: number) => `${x + dx * rx} ${y + dy * ry}`;
   return (
-    <g>
+    <g className="fox-tail-curl">
       <path d={`M ${p(0.92, 0.5)} C ${p(1.22, 1.06)} ${p(-0.2, 1.18)} ${p(-0.86, 0.98)} C ${p(-1.1, 0.88)} ${p(-1.06, 0.66)} ${p(-0.84, 0.66)} C ${p(-0.2, 0.74)} ${p(0.46, 0.64)} ${p(0.7, 0.34)} Z`} fill={FUR_R} />
       <path d={`M ${p(-0.86, 0.98)} C ${p(-1.08, 0.9)} ${p(-1.04, 0.72)} ${p(-0.84, 0.74)} C ${p(-0.72, 0.76)} ${p(-0.6, 0.78)} ${p(-0.5, 0.8)} C ${p(-0.54, 0.9)} ${p(-0.62, 0.98)} ${p(-0.86, 0.98)} Z`} fill={CREAM_L} />
     </g>
@@ -557,8 +562,11 @@ function posedFox(stage: FoxStage, pose: FoxPose, mood: FoxMood) {
       {outfit(stage, b)}
       {armsBehind}
       <g transform={tilt}>
-        {head(hd)}
-        {face({ ...hd, mood })}
+        {/* inner group: the idle head sway, separate from the pose's tilt */}
+        <g className="fox-head">
+          {head(hd)}
+          {face({ ...hd, mood })}
+        </g>
       </g>
       {props}
       {armsFront}
