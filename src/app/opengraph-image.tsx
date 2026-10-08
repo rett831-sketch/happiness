@@ -9,7 +9,7 @@ import { ridgePath, seededRandom } from "@/lib/landscape";
 // holding the morning card on the right. The font in assets/og contains only the characters
 // used below. After changing any text here, run `node scripts/og-fonts.mjs` to re-download it.
 
-export const alt = "幸福練習課：小狐狸小福陪你練習幸福，早晨帶來一張任務卡，夜晚聽你說三件好事";
+export const alt = "幸福練習課：小狐狸陪你練習幸福，早晨帶來一張任務卡，夜晚聽你說三件好事";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -66,7 +66,7 @@ export default function Image() {
         <div style={{ position: "absolute", left: 96, top: 118, display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 28, letterSpacing: 8, color: MOSS }}>每天兩次的小練習</div>
           <div style={{ marginTop: 12, fontSize: 104, letterSpacing: 12 }}>幸福練習課</div>
-          <div style={{ marginTop: 26, fontSize: 38, letterSpacing: 4 }}>小狐狸小福，陪你練習幸福</div>
+          <div style={{ marginTop: 26, fontSize: 38, letterSpacing: 4 }}>小狐狸，陪你練習幸福</div>
           <div style={{ marginTop: 26, display: "flex", flexDirection: "column", gap: 10, fontSize: 28, color: INK_SOFT, letterSpacing: 3 }}>
             <span>早晨，牠帶來一張任務卡</span>
             <span>夜晚，聽你說三件好事</span>
@@ -91,7 +91,7 @@ export default function Image() {
             transform: "rotate(-3deg)",
           }}
         >
-          <span>小</span>
+          <span>幸</span>
           <span>福</span>
         </div>
       </div>
