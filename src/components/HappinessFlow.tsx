@@ -13,6 +13,7 @@ import Ambience from "./Ambience";
 import PosterHeader from "./PosterHeader";
 import KeySettings from "./KeySettings";
 import AiNotice from "./AiNotice";
+import FreshOnShow from "./FreshOnShow";
 import FoxCompanion, { type Situation, type Special } from "./FoxCompanion";
 import { findEgg, findEggOnOpen, isOwlHour, mentionsFox, type EggId } from "@/lib/eggs";
 import { FoxGrewUp, FoxWelcome } from "./FoxModals";
@@ -70,7 +71,11 @@ function openFox(): { fox: FoxState | null; welcomeBack: boolean } {
 export default function HappinessFlow() {
   const isClient = useIsClient();
   if (!isClient) return <main className="min-h-screen bg-amber-50" />;
-  return <Flow />;
+  return (
+    <FreshOnShow>
+      <Flow />
+    </FreshOnShow>
+  );
 }
 
 function Flow() {

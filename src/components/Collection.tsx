@@ -6,6 +6,7 @@ import { loadAll } from "@/lib/storage";
 import { useIsClient } from "@/lib/useIsClient";
 import type { JournalEntry } from "./NightJournal";
 import Ambience from "./Ambience";
+import FreshOnShow from "./FreshOnShow";
 import CardArt from "./CardArt";
 import PosterHeader from "./PosterHeader";
 import WeeklyLetter from "./WeeklyLetter";
@@ -48,7 +49,11 @@ export default function Collection() {
           </span>
         </nav>
         <PosterHeader glyph="藏" label="收藏" couplet={["拾葉成冊", "收好日子"]} seal="珍藏" className="mt-8" />
-        {isClient && <Entries />}
+        {isClient && (
+          <FreshOnShow>
+            <Entries />
+          </FreshOnShow>
+        )}
       </div>
     </main>
   );
