@@ -10,7 +10,7 @@ import FreshOnShow from "./FreshOnShow";
 import CardArt from "./CardArt";
 import PosterHeader from "./PosterHeader";
 import WeeklyLetter from "./WeeklyLetter";
-import { fullDate, monthName, yearMonth } from "@/lib/zhDate";
+import { fullDate, monthDay, monthName, yearMonth } from "@/lib/zhDate";
 
 type Entry = [date: string, entry: JournalEntry];
 
@@ -18,6 +18,18 @@ type Entry = [date: string, entry: JournalEntry];
 function toDate(key: string) {
   const [y, m, d] = key.split("-").map(Number);
   return new Date(y, m - 1, d);
+}
+
+/** A night's caption in the grid: the first good thing written, so the collection reads as your good days. */
+function captionOf(entry: JournalEntry) {
+  return entry.goodThings.find((t) => t.trim()) || entry.reflection || entry.tomorrowCard.title;
+}
+
+/** The day after "2026-10-08": the day the fox's card is for. */
+function nextDay(key: string) {
+  const d = toDate(key);
+  d.setDate(d.getDate() + 1);
+  return d;
 }
 
 /** Everything written that night, for search. */
@@ -150,6 +162,7 @@ function Entries() {
           </h2>
           <ul className="grid grid-cols-3 gap-x-3 gap-y-5">
             {m.items.map(([date, entry]) => {
+              const caption = captionOf(entry);
               const match = q ? [...entry.goodThings, entry.reflection].find((t) => t.includes(q)) : null;
               return (
                 <li key={date}>
@@ -158,8 +171,8 @@ function Entries() {
                       <CardArt seed={entry.tomorrowCard.title} className="size-full transition-transform duration-700 group-hover:scale-[1.05]" />
                     </div>
                     <p className="mt-2 font-sans text-[11px] text-ink-faint">{toDate(date).getDate()} 日</p>
-                    <p className="truncate text-[13px]">{entry.tomorrowCard.title}</p>
-                    {match && <p className="mt-0.5 line-clamp-2 font-sans text-[11px] font-light leading-snug text-moss">{match}</p>}
+                    <p className="line-clamp-2 text-[13px] leading-snug">{caption}</p>
+                    {match && match !== caption && <p className="mt-0.5 line-clamp-2 font-sans text-[11px] font-light leading-snug text-moss">{match}</p>}
                   </button>
                 </li>
               );
@@ -182,7 +195,11 @@ function Entries() {
   );
 }
 
-/** One night's card, full size, with everything written that night. */
+/**
+ * One day, in the order it happened: the morning task and how it felt, the evening's good things and
+ * the fox's reply, and last the card the fox brought back for the next day (clearly dated, so it is
+ * not mistaken for that day's task).
+ */
 function CardDetail({
   item: [date, entry],
   no,
@@ -230,24 +247,16 @@ function CardDetail({
             </button>
           </div>
 
-          <div className="mt-5 aspect-[3/4] overflow-hidden rounded-[2px] shadow-[0_30px_60px_-30px_rgba(42,37,33,0.5)]">
-            <CardArt seed={entry.tomorrowCard.title} className="size-full" />
-          </div>
-          <div className="mt-5 flex items-baseline justify-between">
+          <div className="mt-6 flex items-baseline justify-between border-b border-ink/10 pb-3">
             <p className="font-latin text-sm italic text-moss">No. {String(no).padStart(3, "0")}</p>
-            <p className="font-sans text-xs font-light tracking-[0.1em] text-ink-faint">{fullDate(toDate(date))}</p>
+            <h2 className="font-sans text-sm tracking-[0.1em] text-ink">{fullDate(toDate(date))}</h2>
           </div>
-          <h2 className="mt-2 text-xl tracking-wide">{entry.tomorrowCard.title}</h2>
-          <p className="mt-3 font-light leading-[1.9]">{entry.tomorrowCard.task}</p>
-          <p className="mt-3 flex gap-3 font-sans text-[13px] font-light leading-relaxed text-ink-soft">
-            <span className="mt-[0.7em] h-px w-5 shrink-0 bg-ink-soft/50" />
-            {entry.tomorrowCard.hint}
-          </p>
 
-          <div className="mt-8 space-y-6 border-l border-moss/40 pl-5">
-            {entry.task && <Note label="那天的任務">{entry.task}</Note>}
+          <div className="mt-6 space-y-6 border-l border-moss/40 pl-5">
+            {entry.task && <Note label="早上的任務">{entry.task}</Note>}
+            {entry.reflection && <Note label="任務的感受">{entry.reflection}</Note>}
             {things.length > 0 && (
-              <Note label="那天的好事">
+              <Note label="晚上的三件好事">
                 <ol className="space-y-1">
                   {things.map((t, i) => (
                     <li key={i} className="flex gap-3">
@@ -258,10 +267,29 @@ function CardDetail({
                 </ol>
               </Note>
             )}
-            {entry.reflection && <Note label="任務的感受">{entry.reflection}</Note>}
             <Note label="幸福回音">
               <span className="leading-[2]">{entry.reply}</span>
             </Note>
+          </div>
+
+          {/* the card the fox brought back: it is the NEXT day's task */}
+          <p className="mt-10 flex items-center gap-3 font-sans text-[11px] tracking-[0.2em] text-ink-faint">
+            <span className="h-px flex-1 bg-ink/15" />
+            小狐狸帶回的卡片 · {monthDay(nextDay(date))}
+            <span className="h-px flex-1 bg-ink/15" />
+          </p>
+          <div className="mt-4 overflow-hidden rounded-xl bg-card shadow-[0_20px_40px_-28px_rgba(42,37,33,0.5)]">
+            <div className="aspect-[16/9] overflow-hidden">
+              <CardArt seed={entry.tomorrowCard.title} className="size-full" />
+            </div>
+            <div className="p-5">
+              <p className="text-lg tracking-wide">{entry.tomorrowCard.title}</p>
+              <p className="mt-2 font-light leading-[1.9]">{entry.tomorrowCard.task}</p>
+              <p className="mt-2 flex gap-3 font-sans text-[13px] font-light leading-relaxed text-ink-soft">
+                <span className="mt-[0.7em] h-px w-5 shrink-0 bg-ink-soft/50" />
+                {entry.tomorrowCard.hint}
+              </p>
+            </div>
           </div>
         </article>
       </div>
