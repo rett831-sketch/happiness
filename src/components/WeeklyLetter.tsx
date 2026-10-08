@@ -35,7 +35,7 @@ export default function WeeklyLetter({ entries }: { entries: [string, JournalEnt
     try {
       const res = await fetch("/api/weekly", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...aiHeaders() },
+        headers: { "Content-Type": "application/json", ...(await aiHeaders()) },
         body: JSON.stringify({
           foxName: name,
           entries: week.map(([date, e]) => ({

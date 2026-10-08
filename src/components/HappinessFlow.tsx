@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { TaskCard as Card, KeyProblem } from "@/lib/ai";
-import { aiHeaders, getApiKey } from "@/lib/apiKey";
+import { aiHeaders, getApiKey, loadApiKey } from "@/lib/apiKey";
 import Link from "next/link";
 import { useIsClient } from "@/lib/useIsClient";
 import { DAY_START_HOUR, calendarKey, dateKey, load, logicalDate, save } from "@/lib/storage";
@@ -136,6 +136,11 @@ function Flow() {
     setGrewTo(null);
   }
 
+  // Decrypt the saved key right away (and encrypt one left in plaintext by an older version).
+  useEffect(() => {
+    loadApiKey();
+  }, []);
+
   // Draw a new card only in the morning, so opening the app at night never triggers it.
   useEffect(() => {
     if (today || mode !== "morning") return;
@@ -145,7 +150,7 @@ function Flow() {
         // Weather is looked up on the server from the approximate IP location: no permission prompt.
         const res = await fetch("/api/card", {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...aiHeaders() },
+          headers: { "Content-Type": "application/json", ...(await aiHeaders()) },
           body: JSON.stringify({ weekdayIndex: new Date().getDay(), date: cardKey }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

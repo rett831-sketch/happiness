@@ -18,7 +18,7 @@ type EchoResult = { echo: Echo; source: "ai" | "local"; keyProblem?: KeyProblem 
 async function requestEcho(body: unknown, onText: (text: string) => void): Promise<EchoResult> {
   const res = await fetch("/api/echo", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...aiHeaders() },
+    headers: { "Content-Type": "application/json", ...(await aiHeaders()) },
     body: JSON.stringify(body),
   });
   if (res.status === 429) {
