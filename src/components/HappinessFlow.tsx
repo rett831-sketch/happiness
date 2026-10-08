@@ -5,7 +5,7 @@ import type { TaskCard as Card, KeyProblem } from "@/lib/ai";
 import { aiHeaders, getApiKey } from "@/lib/apiKey";
 import Link from "next/link";
 import { useIsClient } from "@/lib/useIsClient";
-import { DAY_START_HOUR, dateKey, load, logicalDate, save } from "@/lib/storage";
+import { DAY_START_HOUR, calendarKey, dateKey, load, logicalDate, save } from "@/lib/storage";
 import TaskCard from "./TaskCard";
 import BreathTimer from "./BreathTimer";
 import NightJournal from "./NightJournal";
@@ -41,8 +41,7 @@ const modeForNow = (): Mode => {
 };
 
 // Last night's reward card becomes this morning's card.
-function loadTodayCard(): StoredCard | null {
-  const key = dateKey();
+function loadTodayCard(key: string): StoredCard | null {
   const existing = load<StoredCard>(`card:${key}`);
   if (existing) return existing;
   const gifted = load<Card>(`tomorrow:${key}`);
@@ -72,7 +71,13 @@ export default function HappinessFlow() {
 
 function Flow() {
   const [mode, setMode] = useState<Mode>(modeForNow);
-  const [today, setToday] = useState<StoredCard | null>(loadTodayCard);
+  // The day each page is for. Between midnight and 05:00 they differ: the night page is still
+  // last night (journaling after midnight counts for it), while switching to 晨 starts the new day.
+  const cardKey = mode === "night" ? dateKey() : calendarKey();
+  const [cardState, setCardState] = useState(() => ({ key: cardKey, card: loadTodayCard(cardKey) }));
+  if (cardState.key !== cardKey) setCardState({ key: cardKey, card: loadTodayCard(cardKey) });
+  const today = cardState.key === cardKey ? cardState.card : null;
+  const setToday = (card: StoredCard | null) => setCardState({ key: cardKey, card });
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   // Where today's freshly drawn card came from (null for saved or gifted cards).
@@ -93,7 +98,8 @@ function Flow() {
   /** Gives today's care (once a day), and celebrates if the fox reaches a new stage. */
   function care(kind: CareKind) {
     if (!fox) return;
-    const next = giveCare(fox, kind);
+    // the journal belongs to the night's day; the task and breathing to the morning's
+    const next = giveCare(fox, kind, kind === "journal" ? dateKey() : cardKey);
     if (next === fox) return;
     saveFox(next);
     setFox(next);
@@ -121,7 +127,7 @@ function Flow() {
         const res = await fetch("/api/card", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...aiHeaders() },
-          body: JSON.stringify({ weekdayIndex: logicalDate().getDay(), date: dateKey() }),
+          body: JSON.stringify({ weekdayIndex: new Date().getDay(), date: cardKey }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { card, source, keyProblem } = (await res.json()) as {
@@ -132,9 +138,9 @@ function Flow() {
         const stored = { card, fromLastNight: false };
         // Keep AI cards, and built-in cards for visitors without a key (so the card doesn't change
         // during the day). With a key, a temporary AI failure shouldn't lock in a built-in card.
-        if (source === "ai" || !getApiKey()) save(`card:${dateKey()}`, stored);
+        if (source === "ai" || !getApiKey()) save(`card:${cardKey}`, stored);
         if (!cancelled) {
-          setToday(stored);
+          setCardState({ key: cardKey, card: stored });
           setCardInfo({ source, keyProblem });
         }
       } catch {
@@ -144,11 +150,11 @@ function Flow() {
     return () => {
       cancelled = true;
     };
-  }, [today, mode, attempt]);
+  }, [today, mode, attempt, cardKey]);
 
   // After adding or changing a key, redraw today's built-in card with AI right away.
   function onKeyChange() {
-    if (mode === "morning" && today && !load(`card:${dateKey()}`)) {
+    if (mode === "morning" && today && !load(`card:${cardKey}`)) {
       setToday(null);
       setCardInfo(null);
       setFailed(false);
@@ -156,10 +162,10 @@ function Flow() {
   }
 
   const night = mode === "night";
-  const day = logicalDate();
+  const day = night ? logicalDate() : new Date();
 
   const hour = new Date().getHours();
-  const taskDone = fox ? caredToday(fox, "task") : false;
+  const taskDone = fox ? caredToday(fox, "task", cardKey) : false;
   let situation: Situation;
   if (night) {
     const late = hour >= 23 || hour < DAY_START_HOUR;
@@ -172,7 +178,7 @@ function Flow() {
   if (opened.welcomeBack && lastEvent === null && !nightSending && !journaled) situation = "welcomeBack";
 
   // Each day is one lesson: days practised so far, counting today even before any care.
-  const lesson = fox ? daysTogether(fox) + (fox.days[dateKey()] ? 0 : 1) : 1;
+  const lesson = fox ? daysTogether(fox) + (fox.days[cardKey] ? 0 : 1) : 1;
   const rule = `h-px flex-1 ${night ? "bg-moon/20" : "bg-ink/15"}`;
 
   const companion = fox && (
@@ -254,7 +260,7 @@ function Flow() {
           <TaskCard
             key={today?.card.title ?? "pending"}
             card={today?.card ?? null}
-            seed={dateKey()}
+            seed={cardKey}
             dateLabel={dateLabel}
             failed={failed}
             badge={today?.fromLastNight ? "昨夜留箋" : undefined}

@@ -65,14 +65,15 @@ export function newFox(name: string): FoxState {
   return { name, points: 0, sun: 0, breeze: 0, dew: 0, days: {}, lastVisit: dateKey(), seenStage: 1 };
 }
 
-export function caredToday(state: FoxState, kind: CareKind) {
-  return Boolean(state.days[dateKey()]?.[kind]);
+/** `date` defaults to today; morning care after midnight is recorded on the new calendar day. */
+export function caredToday(state: FoxState, kind: CareKind, date = dateKey()) {
+  return Boolean(state.days[date]?.[kind]);
 }
 
 /** Gives today's care of this kind. Returns the new state, or the same state if already given today. */
-export function giveCare(state: FoxState, kind: CareKind): FoxState {
-  if (caredToday(state, kind)) return state;
-  const today = dateKey();
+export function giveCare(state: FoxState, kind: CareKind, date = dateKey()): FoxState {
+  if (caredToday(state, kind, date)) return state;
+  const today = date;
   const { resource, points } = CARE[kind];
   return {
     ...state,

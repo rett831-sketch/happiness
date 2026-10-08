@@ -23,6 +23,14 @@ export function dateKey() {
   return format(logicalDate());
 }
 
+/**
+ * Today on the calendar. The morning page uses this, so switching to 晨 after midnight
+ * (before DAY_START_HOUR) already shows the new day; the night page keeps dateKey().
+ */
+export function calendarKey() {
+  return format(new Date());
+}
+
 export function tomorrowKey() {
   const d = logicalDate();
   d.setDate(d.getDate() + 1);
