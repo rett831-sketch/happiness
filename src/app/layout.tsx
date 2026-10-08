@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "幸福練習課",
     description,
-    siteName: "happiness",
+    siteName: "幸福練習課",
     locale: "zh_TW",
     type: "website",
   },
