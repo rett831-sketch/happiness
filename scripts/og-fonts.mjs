@@ -15,10 +15,6 @@ const source = fs.readFileSync(SOURCE, "utf8");
 const ascii = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join("");
 const serifText = [...new Set([...source].filter((c) => c.charCodeAt(0) > 127).concat([...ascii]))].join("");
 
-// Brush: only the characters in BRUSH_TEXT.
-const brushText = source.match(/const BRUSH_TEXT = "([^"]+)"/)?.[1];
-if (!brushText) throw new Error(`BRUSH_TEXT not found in ${SOURCE}`);
-
 async function download(family, text, file) {
   const css = await (await fetch(`https://fonts.googleapis.com/css2?family=${family}&text=${encodeURIComponent(text)}`)).text();
   const url = css.match(/src: url\(([^)]+)\) format\('truetype'\)/)?.[1];
@@ -30,4 +26,3 @@ async function download(family, text, file) {
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 await download("Noto+Serif+TC", serifText, "serif.ttf");
-await download("Ma+Shan+Zheng", brushText, "brush.ttf");
