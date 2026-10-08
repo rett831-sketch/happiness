@@ -203,11 +203,11 @@ function CardDetail({
       if (e.key === "ArrowRight") onNext?.();
     };
     window.addEventListener("keydown", onKey);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const overflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
+      document.documentElement.style.overflow = overflow;
     };
   }, [onClose, onPrev, onNext]);
 

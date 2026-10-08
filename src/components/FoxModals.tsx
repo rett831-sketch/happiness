@@ -2,20 +2,14 @@
 
 import { useState, type ReactNode } from "react";
 import Fox, { STAGE_NAMES, type FoxStage } from "./Fox";
+import Sheet from "./Sheet";
 import { CARE, STAGE_OUTFIT } from "@/lib/fox";
 
 function Modal({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={label}
-        className="max-h-[90vh] w-full max-w-sm animate-rise overflow-y-auto rounded-[1.5rem] bg-paper p-6 text-center text-ink shadow-2xl"
-      >
-        {children}
-      </div>
-    </div>
+    <Sheet aria-label={label} className="text-center">
+      {children}
+    </Sheet>
   );
 }
 
