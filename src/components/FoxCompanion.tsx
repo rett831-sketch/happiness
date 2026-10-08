@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Fox, { POSE_NAMES, STAGE_NAMES, type FoxMood, type FoxPose } from "./Fox";
 import { CARE, loadSeenPoses, markPoseSeen, progressToNext, stageFor, type CareKind, type FoxState } from "@/lib/fox";
+import { EGGS, type EggId } from "@/lib/eggs";
+
+/** An easter egg just triggered; `n` changes each time, so the same egg can play again. */
+export type Special = { id: EggId; isNew: boolean; n: number };
+
+const SHY_TAPS = 10; // taps in a row, each within SHY_GAP of the last
+const SHY_GAP = 1500;
 
 /** What is happening right now; decides 小福's pose and what it says. */
 export type Situation =
@@ -49,6 +56,8 @@ export default function FoxCompanion({
   place,
   night = false,
   gained,
+  special,
+  onEgg,
 }: {
   fox: FoxState;
   situation: Situation;
@@ -57,16 +66,37 @@ export default function FoxCompanion({
   night?: boolean;
   /** Care just given, shown as a small "+10 陽光" note. */
   gained?: CareKind | null;
+  /** An easter egg playing right now; it overrides the situation until the next tap. */
+  special?: Special | null;
+  onEgg?: (id: EggId) => void;
 }) {
-  // A tap overrides the pose until the situation changes.
-  const [tap, setTap] = useState<{ index: number; situation: Situation } | null>(null);
-  const tapped = tap && tap.situation === situation ? TAPS[tap.index] : null;
-  const scene = SCENES[situation];
+  // A tap overrides the pose until the situation (or easter egg) changes.
+  const context = `${situation}|${special?.n ?? 0}`;
+  const [tap, setTap] = useState<{ index: number; context: string } | null>(null);
+  const tapped = tap && tap.context === context ? TAPS[tap.index] : null;
+  const egg = special && !tapped ? EGGS[special.id] : null;
+  const scene = egg ?? SCENES[situation];
   const pose = tapped?.pose ?? scene.pose;
   const mood = tapped ? undefined : scene.mood;
   const line = (tapped?.line ?? scene.line).replace("{name}", fox.name).replace("{place}", place ?? "遠方");
+  const eggMotion = egg && special?.id === "shy" ? "fox-shy" : egg && special?.id === "note" ? "fox-spin" : "";
+
+  // Ten quick taps in a row: the shy easter egg.
+  const taps = useRef({ count: 0, at: 0 });
+  function onTap() {
+    const now = Date.now();
+    const t = taps.current;
+    t.count = now - t.at < SHY_GAP ? t.count + 1 : 1;
+    t.at = now;
+    if (t.count >= SHY_TAPS && onEgg) {
+      t.count = 0;
+      onEgg("shy");
+      return;
+    }
+    setTap({ index: tap && tap.context === context ? (tap.index + 1) % TAPS.length : 0, context });
+  }
   const stage = stageFor(fox.points);
-  const asleep = situation === "lateSleep" && !tapped;
+  const asleep = situation === "lateSleep" && !tapped && !egg;
 
   // Every pose shown counts toward the pose collection in the handbook (/fox).
   // Poses not in the collection when the page opened are announced as newly collected.
@@ -79,12 +109,14 @@ export default function FoxCompanion({
       <div className="flex items-end gap-3">
         <button
           type="button"
-          onClick={() => setTap({ index: tap ? (tap.index + 1) % TAPS.length : 0, situation })}
+          onClick={onTap}
           aria-label={`摸摸${fox.name}`}
           className="shrink-0 transition-transform active:scale-95"
         >
-          <span key={`${pose}-${stage}`} className="fox-pop block">
-            <Fox stage={stage} pose={pose} mood={mood} size={150} animated />
+          <span key={`${pose}-${stage}-${egg ? special?.n : ""}`} className="fox-pop block">
+            <span className={`block ${eggMotion}`}>
+              <Fox stage={stage} pose={pose} mood={mood} size={150} animated />
+            </span>
           </span>
         </button>
 
@@ -104,7 +136,17 @@ export default function FoxCompanion({
               aria-hidden
             />
           </div>
-          {newlyCollected && (
+          {egg && special?.isNew ? (
+            <Link
+              href="/fox"
+              key={`egg-${special.id}`}
+              className={`mt-2 block animate-rise font-sans text-xs tracking-[0.1em] underline-offset-4 hover:underline ${night ? "text-sun" : "text-seal"}`}
+            >
+              發現彩蛋「{egg.name}」
+              <br />
+              看圖鑑 ›
+            </Link>
+          ) : newlyCollected && (
             <Link
               href="/fox"
               key={`new-${pose}`}

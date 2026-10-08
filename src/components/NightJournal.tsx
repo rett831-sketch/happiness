@@ -60,7 +60,7 @@ export default function NightJournal({
   foxName?: string;
   onSendingChange?: (sending: boolean) => void;
   /** Called after tonight's journal is saved. */
-  onSaved?: () => void;
+  onSaved?: (entry: JournalEntry) => void;
 }) {
   const today = dateKey();
   const [saved, setSaved] = useState<JournalEntry | null>(() => load<JournalEntry>(`night:${today}`));
@@ -90,7 +90,7 @@ export default function NightJournal({
       save(`tomorrow:${tomorrowKey()}`, echo.tomorrowCard);
       setSaved(entry);
       setEditing(false);
-      onSaved?.();
+      onSaved?.(entry);
     } catch (err) {
       setError(err instanceof Error ? err.message : "送出失敗了，請稍後再試。"); // inputs stay filled
     } finally {

@@ -6,6 +6,8 @@ import Ambience from "./Ambience";
 import CardArt, { SCENE_NAMES, sceneName } from "./CardArt";
 import Fox, { POSE_NAMES, STAGE_NAMES, type FoxPose, type FoxStage } from "./Fox";
 import { FoxGrewUp } from "./FoxModals";
+import Moon from "./Moon";
+import { EGGS, EGG_IDS, loadFoundEggs, type EggId } from "@/lib/eggs";
 import type { JournalEntry } from "./NightJournal";
 import {
   STAGE_AT,
@@ -70,6 +72,7 @@ export default function FoxBook() {
 function Book() {
   const [fox, setFox] = useState<FoxState | null>(loadFox);
   const [poses, setPoses] = useState<FoxPose[]>(loadSeenPoses);
+  const [eggs, setEggs] = useState<EggId[]>(loadFoundEggs);
   const [demo] = useState(() => new URLSearchParams(window.location.search).has("demo"));
   const [backedUp, setBackedUp] = useState(hasDemoBackup);
   const [replay, setReplay] = useState<FoxStage | null>(null);
@@ -112,11 +115,18 @@ function Book() {
     save("foxPoses", POSES);
     setPoses(POSES);
   }
+  function unlockAllEggs() {
+    backupForDemo();
+    setBackedUp(true);
+    save("eggs", EGG_IDS);
+    setEggs(EGG_IDS);
+  }
   function restore() {
     restoreFromDemo();
     setBackedUp(false);
     setFox(loadFox());
     setPoses(loadSeenPoses());
+    setEggs(loadFoundEggs());
   }
 
   return (
@@ -143,6 +153,9 @@ function Book() {
             </button>
             <button type="button" onClick={unlockAllPoses} className="border-b border-ink/30 pb-0.5 hover:text-moss">
               解鎖全部動作
+            </button>
+            <button type="button" onClick={unlockAllEggs} className="border-b border-ink/30 pb-0.5 hover:text-moss">
+              解鎖全部彩蛋
             </button>
             {backedUp && (
               <button type="button" onClick={restore} className="border-b border-seal/60 pb-0.5 text-seal">
@@ -230,6 +243,35 @@ function Book() {
           })}
         </ul>
         <p className="mt-3 font-sans text-xs font-light text-ink-soft">晚上寫完三件好事，{fox.name}就會出門探險，隔天早上帶回那裡的明信片。</p>
+      </Section>
+
+      {/* easter eggs */}
+      <Section title="彩蛋" note={`已發現 ${eggs.length} / ${EGG_IDS.length}`}>
+        <ul className="space-y-2">
+          {EGG_IDS.map((id) => {
+            const found = eggs.includes(id);
+            const egg = EGGS[id];
+            return (
+              <li key={id} className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2">
+                <span className="flex size-14 shrink-0 items-center justify-center" style={found ? undefined : silhouette}>
+                  {id === "moon" ? (
+                    <span className="flex size-12 items-center justify-center rounded-full bg-night">
+                      <Moon fox className="size-9" />
+                    </span>
+                  ) : (
+                    <Fox stage={stage} pose={egg.pose} mood={egg.mood} size={56} />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm">{found ? egg.name : "？？？"}</p>
+                  <p className="mt-0.5 font-sans text-[11px] font-light leading-snug text-ink-soft">
+                    {found ? egg.how : `提示：${egg.hint}`}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </Section>
 
       {replay && <FoxGrewUp name={fox.name} stage={replay} onClose={() => setReplay(null)} />}

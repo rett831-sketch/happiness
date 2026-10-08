@@ -2,6 +2,7 @@
 // Stored in this browser's localStorage, like the journal.
 import type { FoxPose, FoxStage } from "@/components/Fox";
 import { dateKey, load, remove, save } from "./storage";
+import { loadFoundEggs, type EggId } from "./eggs";
 
 export type CareKind = "task" | "breath" | "journal";
 
@@ -119,7 +120,7 @@ export function markPoseSeen(pose: FoxPose) {
 
 // --- demo mode: fast-forward for a presentation, then put the real fox back ---
 
-type Backup = { fox: FoxState | null; poses: FoxPose[] };
+type Backup = { fox: FoxState | null; poses: FoxPose[]; eggs?: EggId[] };
 
 export function hasDemoBackup() {
   return load<Backup>("foxBackup") !== null;
@@ -127,7 +128,7 @@ export function hasDemoBackup() {
 
 /** Saves the real fox once, before the first demo change. */
 export function backupForDemo() {
-  if (!hasDemoBackup()) save("foxBackup", { fox: loadFox(), poses: loadSeenPoses() } satisfies Backup);
+  if (!hasDemoBackup()) save("foxBackup", { fox: loadFox(), poses: loadSeenPoses(), eggs: loadFoundEggs() } satisfies Backup);
 }
 
 export function restoreFromDemo() {
@@ -136,5 +137,6 @@ export function restoreFromDemo() {
   if (backup.fox) saveFox(backup.fox);
   else remove("fox");
   save("foxPoses", backup.poses);
+  save("eggs", backup.eggs ?? []);
   remove("foxBackup");
 }

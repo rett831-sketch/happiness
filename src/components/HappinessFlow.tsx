@@ -13,7 +13,8 @@ import Ambience from "./Ambience";
 import PosterHeader from "./PosterHeader";
 import KeySettings from "./KeySettings";
 import AiNotice from "./AiNotice";
-import FoxCompanion, { type Situation } from "./FoxCompanion";
+import FoxCompanion, { type Situation, type Special } from "./FoxCompanion";
+import { findEgg, findEggOnOpen, isOwlHour, mentionsFox, type EggId } from "@/lib/eggs";
 import { FoxGrewUp, FoxWelcome } from "./FoxModals";
 import { sceneName } from "./CardArt";
 import type { FoxStage } from "./Fox";
@@ -94,6 +95,15 @@ function Flow() {
   const [breathing, setBreathing] = useState(false);
   const [nightSending, setNightSending] = useState(false);
   const [journaled, setJournaled] = useState(() => Boolean(load(`night:${dateKey()}`)));
+
+  // --- easter eggs: the one playing now (it lasts until the next thing happens) ---
+  const [special, setSpecial] = useState<Special | null>(() =>
+    opened.fox && mode === "night" && isOwlHour() ? { id: "owl", isNew: findEggOnOpen("owl"), n: 1 } : null,
+  );
+  function egg(id: EggId) {
+    const isNew = findEgg(id);
+    setSpecial((s) => ({ id, isNew, n: (s?.n ?? 0) + 1 }));
+  }
 
   /** Gives today's care (once a day), and celebrates if the fox reaches a new stage. */
   function care(kind: CareKind) {
@@ -188,6 +198,8 @@ function Flow() {
       place={today?.fromLastNight ? sceneName(today.card.title) : undefined}
       night={night}
       gained={gained}
+      special={special}
+      onEgg={egg}
     />
   );
   const couplet = coupletOfTheDay(night);
@@ -206,7 +218,15 @@ function Flow() {
           <p className={`mt-0.5 text-xs tracking-[0.2em] ${night ? "text-moon/60" : "text-ink-soft"}`}>{monthDayWeekday(day)}</p>
         </div>
         <div className="flex gap-4">
-          <button type="button" onClick={() => setMode(night ? "morning" : "night")} className={link} title="手動切換早晨 / 夜間">
+          <button
+            type="button"
+            onClick={() => {
+              setMode(night ? "morning" : "night");
+              setSpecial(null);
+            }}
+            className={link}
+            title="手動切換早晨 / 夜間"
+          >
             {night ? "晨" : "夜"}
           </button>
           <button type="button" onClick={() => setKeyOpen(true)} className={link}>
@@ -228,6 +248,8 @@ function Flow() {
         seal={night ? "安眠" : "清晨"}
         night={night}
         className="mt-8"
+        onBranchTap={fox ? () => egg("osmanthus") : undefined}
+        onMoonHold={fox ? () => egg("moon") : undefined}
       />
 
       {/* today's lesson */}
@@ -247,10 +269,14 @@ function Flow() {
             todayCard={today?.card ?? null}
             onOpenKeySettings={() => setKeyOpen(true)}
             foxName={fox?.name}
-            onSendingChange={setNightSending}
-            onSaved={() => {
+            onSendingChange={(sending) => {
+              setNightSending(sending);
+              if (sending) setSpecial(null);
+            }}
+            onSaved={(entry) => {
               setJournaled(true);
               care("journal");
+              if (fox && mentionsFox([...entry.goodThings, entry.reflection], fox.name)) egg("note");
             }}
           />
         </div>
@@ -264,7 +290,10 @@ function Flow() {
             dateLabel={dateLabel}
             failed={failed}
             badge={today?.fromLastNight ? "昨夜留箋" : undefined}
-            onFlip={() => setLastEvent("flip")}
+            onFlip={() => {
+              setLastEvent("flip");
+              setSpecial(null);
+            }}
           />
           {fox && (taskDone || lastEvent === "flip") && (
             <div className="-mt-8 text-center">
@@ -275,6 +304,7 @@ function Flow() {
                   type="button"
                   onClick={() => {
                     setLastEvent("task");
+                    setSpecial(null);
                     care("task");
                   }}
                   className="rounded-full bg-moss px-8 py-2.5 font-sans text-sm tracking-[0.4em] text-paper shadow-md transition hover:brightness-110 active:scale-95"
@@ -307,6 +337,7 @@ function Flow() {
           <BreathTimer
             onStart={() => {
               setBreathing(true);
+              setSpecial(null);
               setLastEvent("breathStart");
             }}
             onComplete={() => {
