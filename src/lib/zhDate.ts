@@ -24,3 +24,14 @@ export function fullDate(d: Date) {
   const year = [...String(d.getFullYear())].map((c) => DIGITS[Number(c)]).join("");
   return `${year}年${monthDayWeekday(d)}`;
 }
+
+/** 二〇二六年十月 */
+export function yearMonth(d: Date) {
+  const year = [...String(d.getFullYear())].map((c) => DIGITS[Number(c)]).join("");
+  return `${year}年${zhNumber(d.getMonth() + 1)}月`;
+}
+
+/** 十月 */
+export function monthName(d: Date) {
+  return `${zhNumber(d.getMonth() + 1)}月`;
+}
