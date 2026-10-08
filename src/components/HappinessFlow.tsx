@@ -31,6 +31,7 @@ import {
   type FoxState,
 } from "@/lib/fox";
 import { monthDay, monthDayWeekday } from "@/lib/zhDate";
+import { asReadNextMorning } from "@/lib/cardText";
 
 type Mode = "morning" | "night";
 type StoredCard = { card: Card; fromLastNight: boolean };
@@ -44,9 +45,11 @@ const modeForNow = (): Mode => {
 // Last night's reward card becomes this morning's card.
 function loadTodayCard(key: string): StoredCard | null {
   const existing = load<StoredCard>(`card:${key}`);
-  if (existing) return existing;
-  const gifted = load<Card>(`tomorrow:${key}`);
-  if (!gifted) return null;
+  // cards gifted before the 明早 wording fix still get it
+  if (existing) return existing.fromLastNight ? { ...existing, card: asReadNextMorning(existing.card) } : existing;
+  const saved = load<Card>(`tomorrow:${key}`);
+  if (!saved) return null;
+  const gifted = asReadNextMorning(saved);
   const stored = { card: gifted, fromLastNight: true };
   save(`card:${key}`, stored);
   return stored;

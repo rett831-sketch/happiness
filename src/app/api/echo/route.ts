@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { keyProblemOf, resolveAuth, streamEcho, type Echo, type EchoEvent, type KeyProblem } from "@/lib/ai";
+import { asReadNextMorning } from "@/lib/cardText";
 import { fallbackEcho } from "@/lib/fallback";
 import { LIMITS } from "@/lib/limits";
 import { logAiError } from "@/lib/logAiError";
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
           streamed = true;
           send(event);
         }, auth);
-        send({ type: "done", echo, source: "ai" });
+        send({ type: "done", echo: { ...echo, tomorrowCard: asReadNextMorning(echo.tomorrowCard) }, source: "ai" });
       } catch (error) {
         logAiError("api/echo", error);
         if (streamed) send({ type: "reset" });
