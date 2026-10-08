@@ -22,7 +22,10 @@ export default function KeySettings({ onClose, onChange }: { onClose: () => void
   const [remember, setRemember] = useState(canRememberKey);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // With a key set, the form stays hidden until 「換一把金鑰」 is tapped.
+  const [replacing, setReplacing] = useState(false);
   const currentProvider = current.key ? detectProvider(current.key) : null;
+  const showForm = !current.key || replacing;
 
   // The stored key is decrypted asynchronously; show it once ready.
   useEffect(() => {
@@ -42,6 +45,7 @@ export default function KeySettings({ onClose, onChange }: { onClose: () => void
       setCurrent({ key, mode });
       setInput("");
       setError(null);
+      setReplacing(false);
       onChange();
     } catch {
       setError("儲存失敗了，請再試一次。");
@@ -53,8 +57,34 @@ export default function KeySettings({ onClose, onChange }: { onClose: () => void
   async function removeKey() {
     await clearApiKey();
     setCurrent({ key: null, mode: null });
+    setReplacing(false);
     onChange();
   }
+
+  /** Keeps the same key, but remembered or for this tab only: no need to paste it again. */
+  async function switchMode() {
+    if (!current.key) return;
+    setBusy(true);
+    try {
+      const mode = await setApiKey(current.key, current.mode === "remember" ? "session" : "remember");
+      setCurrent({ key: current.key, mode });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startReplacing() {
+    setRemember(canRememberKey() && current.mode !== "session");
+    setReplacing(true);
+  }
+
+  function cancelReplacing() {
+    setReplacing(false);
+    setInput("");
+    setError(null);
+  }
+
+  const link = "border-b border-ink/30 pb-0.5 font-sans text-xs tracking-[0.2em] text-ink-soft";
 
   return (
     <Sheet onClose={onClose} aria-labelledby="key-settings-title">
@@ -78,13 +108,26 @@ export default function KeySettings({ onClose, onChange }: { onClose: () => void
           <p className="mt-1 font-sans text-xs font-light text-ink-soft">
             {current.mode === "remember" ? "已加密保存在這台裝置" : "只在這次使用，關閉分頁就會清除"}
           </p>
-          <button
-            type="button"
-            onClick={removeKey}
-            className="mt-3 border-b border-ink/30 pb-0.5 font-sans text-xs tracking-[0.2em] text-ink-soft hover:border-seal hover:text-seal"
-          >
-            刪除這把金鑰
-          </button>
+          {canRememberKey() && (
+            <button
+              type="button"
+              onClick={switchMode}
+              disabled={busy}
+              className="mt-3 w-full rounded-full border border-moss/50 py-2 font-sans text-xs tracking-[0.2em] text-moss transition hover:bg-moss hover:text-paper disabled:opacity-40"
+            >
+              {current.mode === "remember" ? "改成只在這次使用" : "改成記住這把金鑰"}
+            </button>
+          )}
+          {!replacing && (
+            <div className="mt-4 flex gap-5">
+              <button type="button" onClick={startReplacing} className={`${link} hover:border-moss hover:text-moss`}>
+                換一把金鑰
+              </button>
+              <button type="button" onClick={removeKey} className={`${link} hover:border-seal hover:text-seal`}>
+                刪除這把金鑰
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <p className="mt-5 rounded-xl bg-card p-4 font-sans text-sm font-light text-ink-soft">
@@ -92,53 +135,63 @@ export default function KeySettings({ onClose, onChange }: { onClose: () => void
         </p>
       )}
 
-      <form onSubmit={saveKey} className="mt-5">
-        <label className="block font-sans text-xs tracking-[0.2em] text-ink-soft" htmlFor="api-key">
-          {current.key ? "換一把金鑰" : "貼上你的金鑰"}
-        </label>
-        <input
-          id="api-key"
-          type="password"
-          autoComplete="off"
-          spellCheck={false}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="sk-… 或 sk-ant-…"
-          className="mt-2 w-full border-b border-ink/25 bg-transparent py-2 font-sans text-sm outline-none placeholder:text-ink-faint focus:border-moss"
-        />
-        {canRememberKey() ? (
-          <label className="mt-4 flex items-start gap-2.5 font-sans text-sm font-light leading-relaxed text-ink-soft">
-            <input
-              type="checkbox"
-              checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-              className="mt-1 size-4 shrink-0 accent-moss"
-            />
-            <span>
-              記住這把金鑰
-              <span className="block text-xs text-ink-faint">
-                {remember ? "加密後存在這台裝置，下次打開不用再貼。" : "只在這次使用，關閉分頁就會清除。借別人的電腦時建議這樣用。"}
-              </span>
-            </span>
+      {showForm && (
+        <form onSubmit={saveKey} className="mt-5">
+          <label className="block font-sans text-xs tracking-[0.2em] text-ink-soft" htmlFor="api-key">
+            {current.key ? "換一把金鑰" : "貼上你的金鑰"}
           </label>
-        ) : (
-          <p className="mt-4 font-sans text-xs font-light leading-relaxed text-ink-faint">
-            這個網址不支援加密，金鑰只會保留到關閉分頁。
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="mt-2 text-sm text-seal">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={!input.trim() || busy}
-          className="mt-4 w-full border border-ink/40 py-2.5 font-sans text-sm tracking-[0.4em] transition hover:bg-ink hover:text-paper disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink"
-        >
-          儲存
-        </button>
-      </form>
+          <input
+            id="api-key"
+            autoFocus={replacing}
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="sk-… 或 sk-ant-…"
+            className="mt-2 w-full border-b border-ink/25 bg-transparent py-2 font-sans text-sm outline-none placeholder:text-ink-faint focus:border-moss"
+          />
+          {canRememberKey() ? (
+            <label className="mt-4 flex items-start gap-2.5 font-sans text-sm font-light leading-relaxed text-ink-soft">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="mt-1 size-4 shrink-0 accent-moss"
+              />
+              <span>
+                記住這把金鑰
+                <span className="block text-xs text-ink-faint">
+                  {remember ? "加密後存在這台裝置，下次打開不用再貼。" : "只在這次使用，關閉分頁就會清除。借別人的電腦時建議這樣用。"}
+                </span>
+              </span>
+            </label>
+          ) : (
+            <p className="mt-4 font-sans text-xs font-light leading-relaxed text-ink-faint">
+              這個網址不支援加密，金鑰只會保留到關閉分頁。
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="mt-2 text-sm text-seal">
+              {error}
+            </p>
+          )}
+          <div className="mt-4 flex gap-3">
+            {replacing && (
+              <button type="button" onClick={cancelReplacing} className="flex-1 py-2.5 font-sans text-sm tracking-[0.4em] text-ink-soft hover:text-ink">
+                取消
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={!input.trim() || busy}
+              className="flex-[2] border border-ink/40 py-2.5 font-sans text-sm tracking-[0.4em] transition hover:bg-ink hover:text-paper disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink"
+            >
+              儲存
+            </button>
+          </div>
+        </form>
+      )}
 
       <details className="mt-6 border-t border-ink/10 pt-4" open={!current.key}>
         <summary className="cursor-pointer font-sans text-sm tracking-[0.15em] text-moss">還沒有金鑰？這樣申請</summary>
