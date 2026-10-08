@@ -30,7 +30,8 @@ const OPENAI_MODEL = "gpt-5.5";
 // Keys: bring your own key (BYOK)
 // ---------------------------------------------------------------------------
 
-export type AiAuth = { provider: Provider; apiKey: string };
+/** `site`: the key belongs to this site (from the environment), so its use is rate limited more tightly. */
+export type AiAuth = { provider: Provider; apiKey: string; site?: boolean };
 
 /**
  * The key to use for this request: the visitor's own key from the request header,
@@ -43,8 +44,8 @@ export function resolveAuth(request: Request): AiAuth | null {
     const provider = detectProvider(userKey);
     return provider ? { provider, apiKey: userKey } : null;
   }
-  if (process.env.ANTHROPIC_API_KEY) return { provider: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY };
-  if (process.env.OPENAI_API_KEY) return { provider: "openai", apiKey: process.env.OPENAI_API_KEY };
+  if (process.env.ANTHROPIC_API_KEY) return { provider: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY, site: true };
+  if (process.env.OPENAI_API_KEY) return { provider: "openai", apiKey: process.env.OPENAI_API_KEY, site: true };
   return null;
 }
 
@@ -178,7 +179,7 @@ ${things || "（未填寫）"}
   }
 2. tomorrowCard：把這段回饋轉化成一張「明早的專屬卡片」，任務要延續他今天的好事或心得。
    這張卡片是他隔天早上才會打開來讀的，所以要用隔天早上的角度寫：讀卡片的那天叫「今天」，寫日記的這天叫「昨天」或「昨晚」。
-   不要出現「明早」「明天」（例如寫「今天開始工作前」，不要寫「明早開始工作前」）。`;
+   不要用「明早」「明天」來指讀卡片的那天（例如寫「今天開始工作前」，不要寫「明早開始工作前」）。`;
 }
 
 // ---------------------------------------------------------------------------

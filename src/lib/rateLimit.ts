@@ -24,6 +24,15 @@ export function rateLimit(key: string, limit: number, windowMs: number): number 
   return 0;
 }
 
+/**
+ * Requests per IP per hour. The tight limit protects the site's own AI key. Visitors using their
+ * own key, or the built-in content, only get a loose flood guard: a classroom shares one IP,
+ * and a whole class trying the app at once must not lock each other out.
+ */
+export function hourlyLimit(auth: { site?: boolean } | null) {
+  return auth?.site ? 10 : 200;
+}
+
 export function tooManyRequests(retryAfter: number) {
   return Response.json(
     { error: "rate_limited", message: "今天已經用很多次囉，休息一下再回來吧。" },

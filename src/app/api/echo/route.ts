@@ -4,7 +4,7 @@ import { asReadNextMorning } from "@/lib/cardText";
 import { fallbackEcho } from "@/lib/fallback";
 import { LIMITS } from "@/lib/limits";
 import { logAiError } from "@/lib/logAiError";
-import { clientIp, rateLimit, tooManyRequests } from "@/lib/rateLimit";
+import { clientIp, hourlyLimit, rateLimit, tooManyRequests } from "@/lib/rateLimit";
 
 const Body = z.object({
   task: z.string().max(LIMITS.task).optional(),
@@ -35,10 +35,10 @@ export async function POST(request: Request) {
   }
 
   // Journaling is once a night; leave room for retries.
-  const wait = rateLimit(`echo:${clientIp(request)}`, 10, 60 * 60 * 1000);
+  const auth = resolveAuth(request);
+  const wait = rateLimit(`echo:${clientIp(request)}`, hourlyLimit(auth), 60 * 60 * 1000);
   if (wait) return tooManyRequests(wait);
 
-  const auth = resolveAuth(request);
   const encoder = new TextEncoder();
   const body = new ReadableStream({
     async start(controller) {
