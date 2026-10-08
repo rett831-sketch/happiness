@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Ambience from "./Ambience";
+import FreshOnShow from "./FreshOnShow";
 import CardArt, { SCENE_NAMES, sceneName } from "./CardArt";
 import Fox, { POSE_NAMES, STAGE_NAMES, type FoxPose, type FoxStage } from "./Fox";
 import { FoxGrewUp } from "./FoxModals";
@@ -48,7 +49,7 @@ const POSE_HINTS: Record<FoxPose, string> = {
 /** A locked item: the fox's silhouette. */
 const silhouette = { filter: "brightness(0)", opacity: 0.13 } as const;
 
-export default function FoxBook() {
+export default function FoxBook({ show = null, demo = false }: { show?: string | null; demo?: boolean }) {
   const isClient = useIsClient();
   return (
     <main className="relative min-h-screen px-6 pb-20 pt-10 text-ink">
@@ -63,17 +64,27 @@ export default function FoxBook() {
             回到今天
           </Link>
         </nav>
-        {isClient && <Book />}
+        {isClient && (
+          <FreshOnShow>
+            <Book justFound={show} demo={demo} />
+          </FreshOnShow>
+        )}
       </div>
     </main>
   );
 }
 
-function Book() {
+function Book({ justFound, demo }: { justFound: string | null; demo: boolean }) {
   const [fox, setFox] = useState<FoxState | null>(loadFox);
   const [poses, setPoses] = useState<FoxPose[]>(loadSeenPoses);
   const [eggs, setEggs] = useState<EggId[]>(loadFoundEggs);
-  const [demo] = useState(() => new URLSearchParams(window.location.search).has("demo"));
+  // Coming from a "just found" notice: /fox?show=egg-moon or ?show=pose-tea. Scroll to it and mark it.
+  useEffect(() => {
+    if (!justFound) return;
+    const timer = setTimeout(() => document.getElementById(justFound)?.scrollIntoView({ block: "center" }), 500);
+    return () => clearTimeout(timer);
+  }, [justFound]);
+  const mark = (id: string) => (id === justFound ? "ring-2 ring-seal/70 ring-offset-2 ring-offset-paper" : "");
   const [backedUp, setBackedUp] = useState(hasDemoBackup);
   const [replay, setReplay] = useState<FoxStage | null>(null);
   const [entries] = useState(() => loadAll<JournalEntry>("night"));
@@ -212,7 +223,7 @@ function Book() {
           {POSES.map((p) => {
             const seen = poses.includes(p);
             return (
-              <li key={p} className="rounded-xl bg-card px-1 pb-2 pt-1 text-center">
+              <li key={p} id={`pose-${p}`} className={`scroll-mt-24 rounded-xl bg-card px-1 pb-2 pt-1 text-center ${mark(`pose-${p}`)}`}>
                 <span className="block" style={seen ? undefined : silhouette}>
                   <Fox stage={stage} pose={p} size={70} />
                 </span>
@@ -252,18 +263,21 @@ function Book() {
             const found = eggs.includes(id);
             const egg = EGGS[id];
             return (
-              <li key={id} className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2">
+              <li key={id} id={`egg-${id}`} className={`flex items-center gap-3 rounded-2xl bg-card px-3 py-2 ${mark(`egg-${id}`)}`}>
                 <span className="flex size-14 shrink-0 items-center justify-center" style={found ? undefined : silhouette}>
                   {id === "moon" ? (
-                    <span className="flex size-12 items-center justify-center rounded-full bg-night">
-                      <Moon fox className="size-9" />
+                    <span className="flex size-14 items-center justify-center rounded-full bg-night">
+                      <Moon fox className="size-12" />
                     </span>
                   ) : (
                     <Fox stage={stage} pose={egg.pose} mood={egg.mood} size={56} />
                   )}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm">{found ? egg.name : "？？？"}</p>
+                  <p className="text-sm">
+                    {found ? egg.name : "？？？"}
+                    {found && `egg-${id}` === justFound && <span className="ml-2 font-sans text-[11px] text-seal">剛剛發現</span>}
+                  </p>
                   <p className="mt-0.5 font-sans text-[11px] font-light leading-snug text-ink-soft">
                     {found ? egg.how : `提示：${egg.hint}`}
                   </p>

@@ -138,7 +138,7 @@ export default function FoxCompanion({
           </div>
           {egg && special?.isNew ? (
             <Link
-              href="/fox"
+              href={`/fox?show=egg-${special.id}`}
               key={`egg-${special.id}`}
               className={`mt-2 block animate-rise font-sans text-xs tracking-[0.1em] underline-offset-4 hover:underline ${night ? "text-sun" : "text-seal"}`}
             >
@@ -148,7 +148,7 @@ export default function FoxCompanion({
             </Link>
           ) : newlyCollected && (
             <Link
-              href="/fox"
+              href={`/fox?show=pose-${pose}`}
               key={`new-${pose}`}
               className={`mt-2 block animate-rise font-sans text-xs tracking-[0.1em] underline-offset-4 hover:underline ${night ? "text-sun" : "text-seal"}`}
             >

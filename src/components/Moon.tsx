@@ -6,7 +6,7 @@ export default function Moon({ fox = false, className = "" }: { fox?: boolean; c
   return (
     <svg viewBox="0 0 40 40" className={className} aria-hidden>
       <circle cx="20" cy="20" r="20" fill="#e8ead9" />
-      <g fill="#c9c8b0" className={`transition-opacity duration-1000 ${fox ? "opacity-100" : "opacity-0"}`}>
+      <g fill="#b5b398" className={`transition-opacity duration-1000 ${fox ? "opacity-100" : "opacity-0"}`}>
         {/* tail, curled up beside the body */}
         <path d="M24 31 C34 32 36 21 30 17 C31 24 28 27.5 23 27 Z" />
         {/* body */}
