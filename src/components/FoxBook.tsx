@@ -56,7 +56,7 @@ export default function FoxBook({ show = null, demo = false }: { show?: string |
       <Ambience night={false} />
       <div className="mx-auto max-w-sm">
         <nav className="flex animate-fade justify-between">
-          <p className="text-sm tracking-[0.2em] text-ink-soft">小福圖鑑</p>
+          <p className="text-sm tracking-[0.2em] text-ink-soft">小狐狸圖鑑</p>
           <Link
             href="/"
             className="border-b border-ink/25 pb-0.5 font-sans text-xs tracking-[0.25em] text-ink-soft transition hover:border-moss hover:text-moss"
@@ -145,7 +145,7 @@ function Book({ justFound, demo }: { justFound: string | null; demo: boolean }) 
       {demo && (
         <section className="mt-6 rounded-[1.25rem] border border-dashed border-seal/50 bg-card p-4">
           <p className="font-sans text-xs tracking-[0.3em] text-seal">展示模式</p>
-          <p className="mt-1 font-sans text-xs font-light text-ink-soft">只會改這台裝置上的小福。展示完按「還原」就會回到原本的樣子。</p>
+          <p className="mt-1 font-sans text-xs font-light text-ink-soft">只會改這台裝置上的小狐狸。展示完按「還原」就會回到原本的樣子。</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {STAGES.map((s) => (
               <button
@@ -170,7 +170,7 @@ function Book({ justFound, demo }: { justFound: string | null; demo: boolean }) 
             </button>
             {backedUp && (
               <button type="button" onClick={restore} className="border-b border-seal/60 pb-0.5 text-seal">
-                還原原本的小福
+                還原原本的小狐狸
               </button>
             )}
           </div>

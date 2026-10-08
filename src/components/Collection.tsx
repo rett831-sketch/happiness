@@ -38,7 +38,7 @@ export default function Collection() {
               href="/fox"
               className="border-b border-ink/25 pb-0.5 font-sans text-xs tracking-[0.25em] text-ink-soft transition hover:border-moss hover:text-moss"
             >
-              小福圖鑑
+              小狐狸圖鑑
             </Link>
             <Link
               href="/"

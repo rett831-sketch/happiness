@@ -598,7 +598,7 @@ export default function Fox({
       width={size}
       height={size}
       className={animated ? "fox-alive" : undefined}
-      aria-label={`小福（${STAGE_NAMES[stage]}・${POSE_NAMES[pose]}）`}
+      aria-label={`小狐狸（${STAGE_NAMES[stage]}・${POSE_NAMES[pose]}）`}
     >
       {stage === 5 && <circle cx={100} cy={112} r={86} fill={FLOWER} opacity={0.14} />}
       <ellipse cx={100} cy={186} rx={pose === "jump" ? 34 : 50} ry={pose === "jump" ? 4 : 6} fill={INK} opacity={0.08} />

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import FoxBook from "@/components/FoxBook";
 
 export const metadata: Metadata = {
-  title: "小福圖鑑 · 幸福練習課",
+  title: "小狐狸圖鑑 · 幸福練習課",
 };
 
 // ?show=egg-moon (from a "just found" notice) scrolls to that item; ?demo shows the demo panel.

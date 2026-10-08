@@ -19,7 +19,7 @@ export const EGGS: Record<
   }
 > = {
   shy: {
-    name: "害羞的小福",
+    name: "害羞的小狐狸",
     hint: "一直、一直摸牠",
     how: "連續摸牠十下，牠就害羞得摀住臉。",
     pose: "cheeks",
@@ -86,7 +86,7 @@ export function isOwlHour(date = new Date()) {
   return h >= 2 && h < 4;
 }
 
-/** Whether the journal mentions the fox, by its name or as 小福. */
+/** Whether the journal mentions the fox, by its name or as 小狐狸 (names can be changed). */
 export function mentionsFox(texts: string[], name: string) {
-  return texts.some((t) => t.includes(name) || t.includes("小福"));
+  return texts.some((t) => t.includes(name) || t.includes("小狐狸"));
 }
